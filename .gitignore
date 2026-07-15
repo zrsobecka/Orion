@@ -43,7 +43,10 @@ artifacts/
 # Local application data and temporary files
 *.sqlite
 *.sqlite3
+*.sqlite-*
+*.sqlite3-*
 *.db
+*.db-*
 *.tmp
 *.cache
 coverage/

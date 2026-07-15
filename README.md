@@ -54,6 +54,8 @@ Orion stores registered repository paths, project goals, next actions, and featu
 
 The repository intentionally excludes databases, environment files, local artifacts, exports, cookies, sessions, and private data directories. Do not commit real project databases or screenshots containing private repository information.
 
+Publishing or cloning this source repository does not include projects registered in Orion. See [PRIVACY.md](PRIVACY.md) for the exact local-data boundary.
+
 ## Current limitations
 
 - Windows is the only verified target.
@@ -69,6 +71,7 @@ The repository intentionally excludes databases, environment files, local artifa
 - [Workflow diagram](WORKFLOW-DIAGRAM.md)
 - [Build and verification](docs/build.md)
 - [Brand](docs/brand/README.md)
+- [Privacy](PRIVACY.md)
 
 ## License
 

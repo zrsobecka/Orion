@@ -32,4 +32,4 @@ If Git is initialized after dependencies were installed, run `npm.cmd run prepar
 
 ## Safety
 
-Never commit databases, environment files, credentials, local exports, customer data, private screenshots, or generated release artifacts. Removing a project from Orion must never delete repository files.
+Never commit databases or their WAL/SHM sidecars, environment files, credentials, local exports, customer data, private screenshots, or generated release artifacts. Removing a project from Orion must never delete repository files.
