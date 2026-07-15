@@ -28,6 +28,8 @@ cargo check --manifest-path src-tauri\Cargo.toml
 
 For Windows release changes, run `scripts\Build-App.ps1` and test the exact artifact copied to `app\Orion.exe`.
 
+If Git is initialized after dependencies were installed, run `npm.cmd run prepare` again and verify `git config --get core.hooksPath` returns `.husky/_` before relying on the pre-commit hook.
+
 ## Safety
 
 Never commit databases, environment files, credentials, local exports, customer data, private screenshots, or generated release artifacts. Removing a project from Orion must never delete repository files.
