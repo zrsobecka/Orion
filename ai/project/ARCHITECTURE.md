@@ -15,13 +15,7 @@ React view
 
 ## Ownership boundaries
 
-- `frontend/src/app/` owns startup and the stable desktop shell.
-- `frontend/src/features/projects/` owns project workflow, UI, state coordination, and domain projections.
-- `frontend/src/infrastructure/desktop-runtime.ts` is the only frontend boundary to Tauri and native plugins.
-- `src-tauri/src/features/projects/` validates and translates frontend requests.
-- `src-tauri/src/infrastructure/persistence/database.rs` owns schema, migrations, and SQL.
-- `src-tauri/src/infrastructure/integrations/git.rs` owns safe Git process execution and parsing.
-- SQLite is stored below the operating system's application-data directory, never in the repository.
+See [CODEBASE.md](CODEBASE.md) for path ownership. Cross-boundary rules are strict: the frontend uses one typed native adapter, Rust commands validate incoming paths and values, persistence owns migrations and SQL, and Git runs directly with argument arrays. SQLite lives under the operating system's application-data directory, never in the repository.
 
 ## Persistent entities
 

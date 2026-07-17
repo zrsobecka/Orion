@@ -32,6 +32,7 @@ Tauri 2, React 19, TypeScript, Vite, Tailwind CSS, Rust, SQLite, Vitest, ESLint,
 
 ```powershell
 npm install
+npm.cmd run setup:local
 npm.cmd run tauri dev
 ```
 
@@ -79,8 +80,8 @@ Publishing or cloning this source repository does not include projects registere
 - [Project knowledge map](ai/README.md)
 - [Product contract](ai/product/PRODUCT.md)
 - [Architecture](ai/project/ARCHITECTURE.md)
-- [Codebase map](CODEBASE.md)
-- [Workflow diagram](WORKFLOW-DIAGRAM.md)
+- [Codebase map](ai/project/CODEBASE.md)
+- [Workflow diagram](ai/project/WORKFLOW-DIAGRAM.md)
 - [Build and verification](ai/project/WORKFLOWS.md)
 - [Brand](ai/product/BRAND.md)
 - [Privacy](PRIVACY.md)

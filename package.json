@@ -13,6 +13,7 @@
     "test:watch": "vitest --configLoader runner",
     "preview": "vite preview",
     "tauri": "tauri",
+    "setup:local": "pwsh.exe -NoProfile -File scripts/Initialize-LocalBuild.ps1",
     "prepare": "husky"
   },
   "lint-staged": {
