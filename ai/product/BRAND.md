@@ -1,13 +1,15 @@
 # Orion brand
 
-Orion is a calm mission-control surface: dark navy space, precise cyan navigation signals, restrained violet depth, and high-contrast information. It should feel futuristic without becoming noisy or game-like.
+Orion is a calm mission-control surface: dark navy space, restrained cobalt-blue orientation, precise cyan technical signals, and high-contrast information. It should feel futuristic without becoming noisy or game-like.
 
 ## Principles
 
 - Dense enough for repeated scanning, never cramped.
 - Glow communicates focus or live technical state; it is not general decoration.
-- Cyan is the primary action and orientation color.
+- Cobalt blue connects the interface to the desktop icon and marks primary actions, selection, and keyboard focus. Use it as a restrained accent, not a bright filled surface.
+- Cyan is reserved for secondary technical signals and live system detail.
 - Green, amber, and red are reserved for working, attention, and blocked states.
+- A dirty Git working tree is neutral information, not an amber warning; reserve amber for states that genuinely need attention.
 - Surfaces use subtle blue hierarchy instead of stacks of glass cards.
 - Motion is short (120–250 ms), functional, and disabled when reduced motion is requested.
 

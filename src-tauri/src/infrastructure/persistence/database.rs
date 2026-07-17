@@ -3,7 +3,9 @@ use std::{fs, path::PathBuf, sync::Mutex};
 use rusqlite::{params, Connection, OptionalExtension, Row};
 use tauri::{AppHandle, Manager};
 
-use crate::domain::{AddFeatureInput, Project, ProjectFeature, UpdateProjectInput};
+use crate::domain::{
+    AddFeatureInput, AddProjectTaskInput, Project, ProjectFeature, ProjectTask, UpdateProjectInput,
+};
 
 pub struct AppState {
     pub connection: Mutex<Connection>,
@@ -36,6 +38,19 @@ fn migrate(connection: &Connection) -> Result<(), String> {
             r#"
             PRAGMA foreign_keys = ON;
             PRAGMA journal_mode = WAL;
+            "#,
+        )
+        .map_err(|error| format!("Could not configure the Orion database: {error}"))?;
+
+    let version = connection
+        .query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0))
+        .map_err(|error| format!("Could not read the Orion database version: {error}"))?;
+
+    if version == 0 {
+        connection
+            .execute_batch(
+                r#"
+            BEGIN;
 
             CREATE TABLE IF NOT EXISTS projects (
                 id TEXT PRIMARY KEY NOT NULL,
@@ -66,10 +81,48 @@ fn migrate(connection: &Connection) -> Result<(), String> {
             CREATE INDEX IF NOT EXISTS idx_features_project_priority
                 ON features(project_id, priority, created_at);
 
-            PRAGMA user_version = 1;
+            CREATE TABLE IF NOT EXISTS project_tasks (
+                id TEXT PRIMARY KEY NOT NULL,
+                project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+                completed INTEGER NOT NULL DEFAULT 0 CHECK(completed IN (0, 1)),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_project_tasks_project_status
+                ON project_tasks(project_id, completed, created_at);
+
+            PRAGMA user_version = 2;
+            COMMIT;
             "#,
-        )
-        .map_err(|error| format!("Could not prepare the Orion database: {error}"))?;
+            )
+            .map_err(|error| format!("Could not prepare the Orion database: {error}"))?;
+    } else if version == 1 {
+        connection
+            .execute_batch(
+                r#"
+                BEGIN;
+                CREATE TABLE project_tasks (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                    title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+                    completed INTEGER NOT NULL DEFAULT 0 CHECK(completed IN (0, 1)),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE INDEX idx_project_tasks_project_status
+                    ON project_tasks(project_id, completed, created_at);
+                PRAGMA user_version = 2;
+                COMMIT;
+                "#,
+            )
+            .map_err(|error| format!("Could not upgrade the Orion database: {error}"))?;
+    } else if version > 2 {
+        return Err(format!(
+            "This Orion database was created by a newer app version ({version})."
+        ));
+    }
     Ok(())
 }
 
@@ -122,9 +175,21 @@ fn row_to_feature(row: &Row<'_>) -> rusqlite::Result<ProjectFeature> {
     })
 }
 
+fn row_to_task(row: &Row<'_>) -> rusqlite::Result<ProjectTask> {
+    Ok(ProjectTask {
+        id: row.get(0)?,
+        project_id: row.get(1)?,
+        title: row.get(2)?,
+        completed: row.get(3)?,
+        created_at: row.get(4)?,
+        updated_at: row.get(5)?,
+    })
+}
+
 const PROJECT_COLUMNS: &str = "id, name, path, goal, next_action, status, created_at, updated_at";
 const FEATURE_COLUMNS: &str =
     "id, project_id, name, description, status, priority, evidence, created_at, updated_at";
+const TASK_COLUMNS: &str = "id, project_id, title, completed, created_at, updated_at";
 
 pub fn list_projects(connection: &Connection) -> Result<Vec<Project>, String> {
     let mut statement = connection
@@ -289,6 +354,87 @@ pub fn update_feature_status(
     Ok(project_id)
 }
 
+pub fn list_project_tasks(
+    connection: &Connection,
+    project_id: &str,
+) -> Result<Vec<ProjectTask>, String> {
+    let mut statement = connection
+        .prepare(&format!(
+            "SELECT {TASK_COLUMNS} FROM project_tasks
+             WHERE project_id = ?1
+             ORDER BY completed ASC, created_at DESC, rowid DESC"
+        ))
+        .map_err(|error| format!("Could not prepare the project task list: {error}"))?;
+    let rows = statement
+        .query_map([project_id], row_to_task)
+        .map_err(|error| format!("Could not read the project task list: {error}"))?;
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("Could not decode a project task: {error}"))
+}
+
+pub fn add_project_task(
+    connection: &Connection,
+    input: &AddProjectTaskInput,
+) -> Result<String, String> {
+    let title = input.title.trim();
+    if title.is_empty() || input.title.chars().count() > 200 {
+        return Err("Task title must contain between 1 and 200 characters.".to_string());
+    }
+    get_project(connection, &input.project_id)?;
+
+    let id = new_id(connection, "task")?;
+    let timestamp = now(connection)?;
+    connection
+        .execute(
+            "INSERT INTO project_tasks
+             (id, project_id, title, completed, created_at, updated_at)
+             VALUES (?1, ?2, ?3, 0, ?4, ?4)",
+            params![id, input.project_id, title, timestamp],
+        )
+        .map_err(|error| format!("Could not add the project task: {error}"))?;
+    Ok(input.project_id.clone())
+}
+
+pub fn set_project_task_completed(
+    connection: &Connection,
+    task_id: &str,
+    completed: bool,
+) -> Result<String, String> {
+    let project_id = connection
+        .query_row(
+            "SELECT project_id FROM project_tasks WHERE id = ?1",
+            [task_id],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|error| format!("Could not locate the project task: {error}"))?
+        .ok_or_else(|| "The project task is no longer available.".to_string())?;
+    let timestamp = now(connection)?;
+    connection
+        .execute(
+            "UPDATE project_tasks SET completed = ?2, updated_at = ?3 WHERE id = ?1",
+            params![task_id, completed, timestamp],
+        )
+        .map_err(|error| format!("Could not update the project task: {error}"))?;
+    Ok(project_id)
+}
+
+pub fn remove_project_task(connection: &Connection, task_id: &str) -> Result<String, String> {
+    let project_id = connection
+        .query_row(
+            "SELECT project_id FROM project_tasks WHERE id = ?1",
+            [task_id],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|error| format!("Could not locate the project task: {error}"))?
+        .ok_or_else(|| "The project task is no longer available.".to_string())?;
+    connection
+        .execute("DELETE FROM project_tasks WHERE id = ?1", [task_id])
+        .map_err(|error| format!("Could not remove the project task: {error}"))?;
+    Ok(project_id)
+}
+
 fn validate_project_status(status: &str) -> Result<(), String> {
     match status {
         "planning" | "active" | "paused" | "shipped" => Ok(()),
@@ -348,5 +494,49 @@ mod tests {
             result.expect_err("invalid status"),
             "Unknown feature status."
         );
+    }
+
+    #[test]
+    fn project_tasks_are_scoped_sorted_and_persisted() {
+        let connection = test_connection();
+        let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        let first = AddProjectTaskInput {
+            project_id: project.id.clone(),
+            title: "Map the cockpit".to_string(),
+        };
+        add_project_task(&connection, &first).expect("first task");
+        let second = AddProjectTaskInput {
+            project_id: project.id.clone(),
+            title: "Verify the executable".to_string(),
+        };
+        add_project_task(&connection, &second).expect("second task");
+
+        let tasks = list_project_tasks(&connection, &project.id).expect("task list");
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(tasks[0].title, "Verify the executable");
+
+        set_project_task_completed(&connection, &tasks[0].id, true).expect("complete task");
+        let tasks = list_project_tasks(&connection, &project.id).expect("updated list");
+        assert!(!tasks[0].completed);
+        assert!(tasks[1].completed);
+    }
+
+    #[test]
+    fn removing_a_project_removes_its_tasks() {
+        let connection = test_connection();
+        let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        add_project_task(
+            &connection,
+            &AddProjectTaskInput {
+                project_id: project.id.clone(),
+                title: "Keep this local".to_string(),
+            },
+        )
+        .expect("task");
+
+        remove_project(&connection, &project.id).expect("remove project");
+        assert!(list_project_tasks(&connection, &project.id)
+            .expect("task list")
+            .is_empty());
     }
 }

@@ -49,6 +49,32 @@ export const demoDashboard: Dashboard = {
           updatedAt: "2026-07-13T09:00:00Z",
         },
       ],
+      tasks: [
+        {
+          id: "t-map",
+          projectId: "orion-demo",
+          title: "Turn the project cockpit into a visual mission map",
+          completed: false,
+          createdAt: "2026-07-13T13:25:00Z",
+          updatedAt: "2026-07-13T13:25:00Z",
+        },
+        {
+          id: "t-native",
+          projectId: "orion-demo",
+          title: "Verify the exact packaged Orion.exe",
+          completed: false,
+          createdAt: "2026-07-13T13:18:00Z",
+          updatedAt: "2026-07-13T13:18:00Z",
+        },
+        {
+          id: "t-import",
+          projectId: "orion-demo",
+          title: "Connect the native repository picker",
+          completed: true,
+          createdAt: "2026-07-13T11:00:00Z",
+          updatedAt: "2026-07-13T13:10:00Z",
+        },
+      ],
       git: {
         available: true,
         error: null,
@@ -130,6 +156,16 @@ export const demoDashboard: Dashboard = {
           evidence: "Model-selection UX is not connected yet.",
           createdAt: "2026-07-01T10:00:00Z",
           updatedAt: "2026-07-12T19:00:00Z",
+        },
+      ],
+      tasks: [
+        {
+          id: "m-task-model",
+          projectId: "menma-demo",
+          title: "Connect the story room to the selected local model",
+          completed: false,
+          createdAt: "2026-07-12T19:05:00Z",
+          updatedAt: "2026-07-12T19:05:00Z",
         },
       ],
       git: {

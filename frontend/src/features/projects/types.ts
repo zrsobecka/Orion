@@ -25,6 +25,15 @@ export interface ProjectFeature {
   updatedAt: string;
 }
 
+export interface ProjectTask {
+  id: string;
+  projectId: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface GitCommit {
   hash: string;
   shortHash: string;
@@ -56,6 +65,7 @@ export interface GitSnapshot {
 export interface ProjectSnapshot {
   project: Project;
   features: ProjectFeature[];
+  tasks: ProjectTask[];
   git: GitSnapshot;
 }
 
@@ -78,4 +88,9 @@ export interface AddFeatureInput {
   status: FeatureStatus;
   priority: FeaturePriority;
   evidence: string;
+}
+
+export interface AddProjectTaskInput {
+  projectId: string;
+  title: string;
 }
