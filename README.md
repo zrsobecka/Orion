@@ -2,7 +2,7 @@
 
 Orion is a local-first mission control for application projects. It keeps Git facts, project intent, feature health, and the next concrete action in one desktop workspace so a builder can resume work without reconstructing context from folders, chats, and memory.
 
-![Orion icon](docs/brand/orion-desktop-icon.png)
+![Orion icon](ai/product/brand/orion-desktop-icon.png)
 
 ## What works in the MVP
 
@@ -46,7 +46,7 @@ cargo test --manifest-path src-tauri\Cargo.toml
 cargo check --manifest-path src-tauri\Cargo.toml
 ```
 
-Run `pwsh.exe -File scripts\Build-App.ps1` for the complete Windows build. See [docs/build.md](docs/build.md) for artifact paths and local shortcut setup.
+Run `pwsh.exe -File scripts\Build-App.ps1` for the complete Windows build. See [ai/project/WORKFLOWS.md](ai/project/WORKFLOWS.md) for artifact paths and local shortcut setup.
 
 ## Data and privacy
 
@@ -65,12 +65,13 @@ Publishing or cloning this source repository does not include projects registere
 
 ## Project documentation
 
-- [Product contract](docs/product.md)
-- [Architecture](docs/architecture.md)
-- [Codebase map](CODEBASE.md)
-- [Workflow diagram](WORKFLOW-DIAGRAM.md)
-- [Build and verification](docs/build.md)
-- [Brand](docs/brand/README.md)
+- [Project knowledge map](ai/README.md)
+- [Product contract](ai/product/PRODUCT.md)
+- [Architecture](ai/project/ARCHITECTURE.md)
+- [Codebase map](ai/project/CODEBASE.md)
+- [Workflow diagram](ai/project/WORKFLOW-DIAGRAM.md)
+- [Build and verification](ai/project/WORKFLOWS.md)
+- [Brand](ai/product/BRAND.md)
 - [Privacy](PRIVACY.md)
 
 ## License

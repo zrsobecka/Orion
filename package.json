@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite --configLoader runner",
     "build": "tsc && vite build --configLoader runner",
-    "lint": "eslint .",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
+    "lint": "eslint frontend/src vite.config.ts eslint.config.js",
+    "format": "prettier frontend ai AGENTS.md README.md PRIVACY.md package.json tsconfig.json tsconfig.node.json vite.config.ts eslint.config.js prettier.config.js src-tauri/tauri.conf.json --write",
+    "format:check": "prettier frontend ai AGENTS.md README.md PRIVACY.md package.json tsconfig.json tsconfig.node.json vite.config.ts eslint.config.js prettier.config.js src-tauri/tauri.conf.json --check",
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest --configLoader runner",
     "preview": "vite preview",

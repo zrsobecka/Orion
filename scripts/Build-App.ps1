@@ -1,5 +1,7 @@
 [CmdletBinding()]
-param()
+param(
+    [switch] $SkipFrontendTests
+)
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -26,7 +28,11 @@ Push-Location $projectRoot
 try {
     Invoke-NativeCommand 'npm.cmd' @('run', 'lint')
     Invoke-NativeCommand 'npm.cmd' @('run', 'format:check')
-    Invoke-NativeCommand 'npm.cmd' @('test')
+    if (-not $SkipFrontendTests) {
+        Invoke-NativeCommand 'npm.cmd' @('test')
+    } else {
+        Write-Warning 'Frontend tests were skipped explicitly. Run them in a normal terminal before merging.'
+    }
     Invoke-NativeCommand 'npm.cmd' @('run', 'build')
     Invoke-NativeCommand 'cargo' @('test', '--manifest-path', 'src-tauri\Cargo.toml')
     Invoke-NativeCommand 'cargo' @('check', '--manifest-path', 'src-tauri\Cargo.toml')

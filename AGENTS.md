@@ -6,8 +6,9 @@ Keep Orion a local-first, scan-friendly mission control for application projects
 
 ## Architecture
 
-- Keep React feature code inside `src/features/` and shared UI small.
-- Keep all frontend-to-native calls inside `src/services/desktop-runtime.ts`.
+- Keep React feature code inside `frontend/src/features/` and shared UI small.
+- Keep all frontend-to-native calls inside `frontend/src/infrastructure/desktop-runtime.ts`.
+- Keep current project knowledge under `ai/`; public release documents stay at the repository root.
 - Validate paths and external input at the Rust command boundary.
 - Run Git with argument arrays, never interpolated shell commands.
 - Store mutable data through Tauri's OS application-data path, never in the repository.

@@ -1,6 +1,6 @@
-mod commands;
-mod models;
-mod services;
+mod domain;
+mod features;
+mod infrastructure;
 
 use tauri::Manager;
 
@@ -8,20 +8,20 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let state =
-                services::database::initialize(app.handle()).map_err(std::io::Error::other)?;
+            let state = infrastructure::persistence::database::initialize(app.handle())
+                .map_err(std::io::Error::other)?;
             app.manage(state);
             Ok(())
         })
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            commands::get_dashboard,
-            commands::add_project,
-            commands::update_project,
-            commands::remove_project,
-            commands::add_feature,
-            commands::update_feature_status,
+            features::projects::get_dashboard,
+            features::projects::add_project,
+            features::projects::update_project,
+            features::projects::remove_project,
+            features::projects::add_feature,
+            features::projects::update_feature_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
