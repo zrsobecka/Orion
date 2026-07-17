@@ -7,9 +7,12 @@ import {
   FolderOpen,
   GitBranch,
   GitCommitHorizontal,
+  Orbit,
   Pencil,
   Plus,
   Radio,
+  Satellite,
+  Sparkles,
   Target,
   Trash2,
 } from "lucide-react";
@@ -19,12 +22,14 @@ import { Modal } from "../../../shared/ui/Modal";
 import { featureStatusLabels, formatRelativeTime, getFeatureCounts } from "../projectModel";
 import type {
   AddFeatureInput,
+  AddProjectTaskInput,
   FeaturePriority,
   FeatureStatus,
   ProjectSnapshot,
   ProjectStatus,
   UpdateProjectInput,
 } from "../types";
+import { ProjectTasks } from "./ProjectTasks";
 
 interface ProjectCockpitProps {
   snapshot: ProjectSnapshot;
@@ -32,6 +37,9 @@ interface ProjectCockpitProps {
   onRefresh: () => void;
   onUpdateProject: (input: UpdateProjectInput) => Promise<void>;
   onAddFeature: (input: AddFeatureInput) => Promise<void>;
+  onAddProjectTask: (input: AddProjectTaskInput) => Promise<void>;
+  onSetProjectTaskCompleted: (taskId: string, completed: boolean) => Promise<void>;
+  onRemoveProjectTask: (taskId: string) => Promise<void>;
   onUpdateFeatureStatus: (featureId: string, status: FeatureStatus) => void;
   onRemoveProject: (projectId: string) => Promise<void>;
 }
@@ -44,6 +52,9 @@ export function ProjectCockpit({
   onRefresh,
   onUpdateProject,
   onAddFeature,
+  onAddProjectTask,
+  onSetProjectTaskCompleted,
+  onRemoveProjectTask,
   onUpdateFeatureStatus,
   onRemoveProject,
 }: ProjectCockpitProps) {
@@ -51,6 +62,7 @@ export function ProjectCockpit({
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const counts = getFeatureCounts(snapshot);
+  const openTaskCount = snapshot.tasks.filter((task) => !task.completed).length;
   const features = useMemo(
     () =>
       [...snapshot.features].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
@@ -89,30 +101,20 @@ export function ProjectCockpit({
         </div>
       </header>
 
-      <section className="mission-strip">
-        <div className="mission-strip__goal">
-          <span className="signal-icon signal-icon--cyan">
-            <Target size={18} />
-          </span>
-          <div>
-            <span>Mission goal</span>
-            <strong>
-              {snapshot.project.goal || "Add the outcome this application should create."}
-            </strong>
-          </div>
-        </div>
-        <div className="mission-strip__next">
-          <span className="signal-icon signal-icon--violet">
-            <Radio size={18} />
-          </span>
-          <div>
-            <span>Next concrete action</span>
-            <strong>
-              {snapshot.project.nextAction || "Define one small step that moves the project."}
-            </strong>
-          </div>
-        </div>
-      </section>
+      <div className="mission-deck">
+        <MissionOrbit
+          openTaskCount={openTaskCount}
+          snapshot={snapshot}
+          workingFeatureCount={counts.working}
+        />
+        <ProjectTasks
+          projectId={snapshot.project.id}
+          tasks={snapshot.tasks}
+          onAdd={onAddProjectTask}
+          onRemove={onRemoveProjectTask}
+          onSetCompleted={onSetProjectTaskCompleted}
+        />
+      </div>
 
       <div className="cockpit-grid">
         <main className="cockpit-main">
@@ -236,6 +238,122 @@ export function ProjectCockpit({
         />
       )}
     </div>
+  );
+}
+
+function MissionOrbit({
+  snapshot,
+  openTaskCount,
+  workingFeatureCount,
+}: {
+  snapshot: ProjectSnapshot;
+  openTaskCount: number;
+  workingFeatureCount: number;
+}) {
+  return (
+    <section className="mission-map" aria-labelledby="mission-orbit-title">
+      <div aria-hidden="true" className="mission-map__starfield">
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+      <header className="mission-map__header">
+        <div>
+          <p className="eyebrow">
+            <Sparkles size={13} /> Visual command deck
+          </p>
+          <h2 id="mission-orbit-title">Mission orbit</h2>
+        </div>
+        <span className="mission-map__live">
+          <i /> Live project map
+        </span>
+      </header>
+
+      <div className="mission-map__canvas">
+        <svg aria-hidden="true" className="mission-map__orbits" viewBox="0 0 620 340">
+          <defs>
+            <linearGradient id="orbit-energy" x1="0" x2="1">
+              <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+              <stop offset="0.5" stopColor="currentColor" stopOpacity="1" />
+              <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <ellipse className="orbit-line orbit-line--one" cx="310" cy="170" rx="190" ry="82" />
+          <ellipse
+            className="orbit-line orbit-line--two"
+            cx="310"
+            cy="170"
+            rx="218"
+            ry="112"
+            transform="rotate(-22 310 170)"
+          />
+          <ellipse
+            className="orbit-line orbit-line--three"
+            cx="310"
+            cy="170"
+            rx="226"
+            ry="92"
+            transform="rotate(30 310 170)"
+          />
+          <path
+            className="orbit-energy"
+            d="M84 242 C180 55 440 30 552 184 C598 246 510 319 370 286"
+            stroke="url(#orbit-energy)"
+          />
+        </svg>
+
+        <div className="mission-core">
+          <span aria-hidden="true" className="mission-core__ring mission-core__ring--outer" />
+          <span aria-hidden="true" className="mission-core__ring mission-core__ring--inner" />
+          <span className="mission-core__icon">
+            <Orbit size={26} />
+          </span>
+          <small>Project core</small>
+          <strong>{snapshot.project.name}</strong>
+        </div>
+
+        <div className="orbit-node orbit-node--tasks">
+          <span className="orbit-node__icon">
+            <Target size={15} />
+          </span>
+          <div>
+            <small>Open tasks</small>
+            <strong>{openTaskCount.toString().padStart(2, "0")}</strong>
+          </div>
+        </div>
+        <div className="orbit-node orbit-node--features">
+          <span className="orbit-node__icon">
+            <Radio size={15} />
+          </span>
+          <div>
+            <small>Working features</small>
+            <strong>{workingFeatureCount.toString().padStart(2, "0")}</strong>
+          </div>
+        </div>
+        <div className="orbit-node orbit-node--git">
+          <span className="orbit-node__icon">
+            <Satellite size={15} />
+          </span>
+          <div>
+            <small>Active branch</small>
+            <strong>{snapshot.git.available ? snapshot.git.currentBranch : "Offline"}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="mission-map__brief">
+        <div>
+          <span>Mission goal</span>
+          <strong>{snapshot.project.goal || "Add what this application should achieve."}</strong>
+        </div>
+        <div>
+          <span>Pinned focus</span>
+          <strong>{snapshot.project.nextAction || "No focus note pinned."}</strong>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -22,6 +22,9 @@ pub fn run() {
             features::projects::remove_project,
             features::projects::add_feature,
             features::projects::update_feature_status,
+            features::projects::add_project_task,
+            features::projects::set_project_task_completed,
+            features::projects::remove_project_task,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

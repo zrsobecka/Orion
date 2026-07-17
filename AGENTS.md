@@ -64,6 +64,8 @@ cargo test --manifest-path src-tauri\Cargo.toml
 cargo check --manifest-path src-tauri\Cargo.toml
 ```
 
+Keep frontend component tests on `happy-dom`. In this Windows/Dropbox workspace, importing `jsdom@29.1.1` took about 133 seconds and caused Vitest workers to time out before running tests.
+
 For Windows release changes, run `scripts\Build-App.ps1` and test the exact artifact copied to `app\Orion.exe`.
 
 If Git is initialized after dependencies were installed, run `npm.cmd run prepare` again and verify `git config --get core.hooksPath` returns `.husky/_` before relying on the pre-commit hook.

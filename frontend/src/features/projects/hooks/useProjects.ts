@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { desktopRuntime } from "../../../infrastructure/desktop-runtime";
-import type { AddFeatureInput, FeatureStatus, ProjectSnapshot, UpdateProjectInput } from "../types";
+import type {
+  AddFeatureInput,
+  AddProjectTaskInput,
+  FeatureStatus,
+  ProjectSnapshot,
+  UpdateProjectInput,
+} from "../types";
 
 type WorkspaceView = "overview" | "project";
 const selectedProjectKey = "orion.selectedProjectId";
@@ -116,6 +122,45 @@ export function useProjects() {
     [replaceSnapshot],
   );
 
+  const addProjectTask = useCallback(
+    async (input: AddProjectTaskInput) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.addProjectTask(input));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
+  const setProjectTaskCompleted = useCallback(
+    async (taskId: string, completed: boolean) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.setProjectTaskCompleted(taskId, completed));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
+  const removeProjectTask = useCallback(
+    async (taskId: string) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.removeProjectTask(taskId));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
   const removeProject = useCallback(async (projectId: string) => {
     setError(null);
     try {
@@ -151,6 +196,9 @@ export function useProjects() {
     updateProject,
     addFeature,
     updateFeatureStatus,
+    addProjectTask,
+    setProjectTaskCompleted,
+    removeProjectTask,
     removeProject,
     refresh: () => loadDashboard(true),
   };

@@ -27,6 +27,17 @@ pub struct ProjectFeature {
     pub updated_at: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectTask {
+    pub id: String,
+    pub project_id: String,
+    pub title: String,
+    pub completed: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateProjectInput {
@@ -45,4 +56,11 @@ pub struct AddFeatureInput {
     pub status: String,
     pub priority: String,
     pub evidence: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddProjectTaskInput {
+    pub project_id: String,
+    pub title: String,
 }

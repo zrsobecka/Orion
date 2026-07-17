@@ -10,7 +10,7 @@ export default defineConfig(async () => ({
   root: "frontend",
   plugins: [react(), tailwindcss()],
   test: {
-    environment: "jsdom",
+    environment: "happy-dom",
     setupFiles: "./src/test/setup.ts",
   },
   build: {

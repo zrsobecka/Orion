@@ -3,6 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import type {
   AddFeatureInput,
+  AddProjectTaskInput,
   Dashboard,
   FeatureStatus,
   ProjectSnapshot,
@@ -81,6 +82,50 @@ export const desktopRuntime = {
       feature.status = status;
       feature.updatedAt = new Date().toISOString();
     }
+    return structuredClone(snapshot);
+  },
+
+  async addProjectTask(input: AddProjectTaskInput): Promise<ProjectSnapshot> {
+    if (isTauri()) return invoke<ProjectSnapshot>("add_project_task", { input });
+
+    const snapshot = findBrowserSnapshot(input.projectId);
+    const now = new Date().toISOString();
+    snapshot.tasks.unshift({
+      id: crypto.randomUUID(),
+      projectId: input.projectId,
+      title: input.title.trim(),
+      completed: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return structuredClone(snapshot);
+  },
+
+  async setProjectTaskCompleted(taskId: string, completed: boolean): Promise<ProjectSnapshot> {
+    if (isTauri()) {
+      return invoke<ProjectSnapshot>("set_project_task_completed", { taskId, completed });
+    }
+
+    const snapshot = browserDashboard.projects.find(({ tasks }) =>
+      tasks.some(({ id }) => id === taskId),
+    );
+    if (!snapshot) throw new Error("The project task is no longer available.");
+    const task = snapshot.tasks.find(({ id }) => id === taskId);
+    if (task) {
+      task.completed = completed;
+      task.updatedAt = new Date().toISOString();
+    }
+    return structuredClone(snapshot);
+  },
+
+  async removeProjectTask(taskId: string): Promise<ProjectSnapshot> {
+    if (isTauri()) return invoke<ProjectSnapshot>("remove_project_task", { taskId });
+
+    const snapshot = browserDashboard.projects.find(({ tasks }) =>
+      tasks.some(({ id }) => id === taskId),
+    );
+    if (!snapshot) throw new Error("The project task is no longer available.");
+    snapshot.tasks = snapshot.tasks.filter(({ id }) => id !== taskId);
     return structuredClone(snapshot);
   },
 

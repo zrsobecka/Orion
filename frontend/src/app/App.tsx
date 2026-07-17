@@ -1,5 +1,5 @@
 import { Activity, RefreshCw, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { OrionLogo } from "../shared/ui/OrionLogo";
 import { Overview } from "../features/projects/components/Overview";
 import { ProjectCockpit } from "../features/projects/components/ProjectCockpit";
@@ -8,6 +8,7 @@ import { Sidebar } from "./shell/Sidebar";
 
 export default function App() {
   const workspace = useProjects();
+  const stageScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -19,6 +20,10 @@ export default function App() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [workspace]);
+
+  useEffect(() => {
+    if (stageScrollRef.current) stageScrollRef.current.scrollTop = 0;
+  }, [workspace.selectedProjectId, workspace.view]);
 
   if (workspace.loading) {
     return (
@@ -72,14 +77,17 @@ export default function App() {
           </div>
         )}
 
-        <div className="stage-scroll">
+        <div ref={stageScrollRef} className="stage-scroll">
           {showCockpit ? (
             <ProjectCockpit
               snapshot={workspace.selectedProject!}
               onAddFeature={workspace.addFeature}
+              onAddProjectTask={workspace.addProjectTask}
               onBack={workspace.showOverview}
               onRefresh={workspace.refresh}
               onRemoveProject={workspace.removeProject}
+              onRemoveProjectTask={workspace.removeProjectTask}
+              onSetProjectTaskCompleted={workspace.setProjectTaskCompleted}
               onUpdateFeatureStatus={workspace.updateFeatureStatus}
               onUpdateProject={workspace.updateProject}
             />

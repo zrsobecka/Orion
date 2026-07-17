@@ -37,6 +37,7 @@ const snapshot = (overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot => 
       updatedAt: "2026-07-13T10:00:00Z",
     },
   ],
+  tasks: [],
   git: {
     available: true,
     error: null,

@@ -27,6 +27,7 @@ React view
 
 - `projects`: unique local repository path, goal, next action, and lifecycle status.
 - `features`: a project-owned capability, priority horizon, working status, and evidence note.
+- `project_tasks`: a project-owned manual task with a durable completion state.
 
 Foreign keys and check constraints protect valid relationships and status values. Schema upgrades use `PRAGMA user_version` migrations.
 
@@ -35,4 +36,5 @@ Foreign keys and check constraints protect valid relationships and status values
 - One missing or invalid repository does not block the rest of the dashboard; its Git panel shows an actionable error.
 - Adding a duplicate repository returns the existing project instead of creating duplicate state.
 - Removing a project only removes it from Orion. It never deletes repository files.
+- Removing a project removes its Orion-owned tasks through the SQLite foreign-key relationship.
 - Git is launched directly with an argument array, so repository paths are not interpreted as shell commands.
