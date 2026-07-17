@@ -4,11 +4,10 @@ This folder is the maintained source of truth for Orion product and engineering 
 
 ## Start here
 
-- [`../CODEBASE.md`](../CODEBASE.md) — where code and runtime responsibilities live.
+- `project/CODEBASE.md` — where code and runtime responsibilities live.
 - `project/ARCHITECTURE.md` — data flow, ownership boundaries, and failure behavior.
 - `project/WORKFLOWS.md` — development, verification, build, and local installation.
-- [`../WORKFLOW-DIAGRAM.md`](../WORKFLOW-DIAGRAM.md) — visual resume-work loop.
-- `project/TODO.md` — compact active follow-ups.
+- `project/WORKFLOW-DIAGRAM.md` — visual resume-work loop.
 - `project/CHANGELOG.md` — significant completed structural and product changes.
 - `product/PRODUCT.md` — product objective, current scope, and non-goals.
 - `product/BRAND.md` — visual intent and approved brand assets.

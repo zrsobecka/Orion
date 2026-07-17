@@ -4,72 +4,32 @@
 
 Keep Orion a local-first, scan-friendly mission control for application projects. Prefer the smallest change that strengthens the resume-work loop: current state, feature health, Git evidence, and next action.
 
-## Architecture
+## Boundaries
 
-- Keep React feature code inside `frontend/src/features/` and shared UI small.
-- Keep all frontend-to-native calls inside `frontend/src/infrastructure/desktop-runtime.ts`.
-- Keep current project knowledge under `ai/`; public release documents stay at the repository root.
-- Validate paths and external input at the Rust command boundary.
-- Run Git with argument arrays, never interpolated shell commands.
-- Store mutable data through Tauri's OS application-data path, never in the repository.
-- Preserve the SQLite schema through explicit migrations.
+- Keep React feature code in `frontend/src/features/` and shared UI small.
+- Route every frontend-to-native call through `frontend/src/infrastructure/desktop-runtime.ts`.
+- Validate paths and external input at the Rust command boundary. Run Git with argument arrays, never shell strings.
+- Store mutable data through Tauri's OS application-data path. Preserve SQLite through explicit migrations.
+- Keep project knowledge under `ai/`; reserve the root for repository configuration and public documents.
 
-### Canonical folder layout
+## Organization
 
-Treat the following as Orion's target organization. Keep new code and project knowledge in these homes; when refactoring, move existing material toward this layout only when it is related to the change, rather than creating parallel or catch-all folders.
+- `ai/project/`: codebase, architecture, workflows, diagrams, and engineering state.
+- `ai/product/`, `ai/features/`, `ai/integrations/`, `ai/decisions/`: durable knowledge owned by those topics.
+- `frontend/src/app/`, `features/`, `infrastructure/`, `shared/ui/`: shell, product modules, native adapter, and small shared UI.
+- `src-tauri/src/features/` and `infrastructure/`: native commands, persistence, and integrations.
+- `scripts/`: repeatable development and release automation. `app/`: ignored final user-facing binaries.
 
-```text
-ai/
-  project/        # CODEBASE.md, ARCHITECTURE.md, WORKFLOWS.md
-  product/        # PRODUCT.md, BRAND.md
-  features/       # one document per feature, e.g. projects.md
-  integrations/   # integration notes, e.g. git.md and sqlite.md
-  decisions/      # concise architecture/product decision records
-frontend/
-  public/
-  src/
-    app/          # App.tsx and shell/
-    features/     # feature modules: components/, hooks/, model/, types.ts, index.ts
-    infrastructure/ # desktop-runtime.ts; the only frontend-to-native boundary
-    shared/ui/
-    assets/
-    styles/
-    main.tsx
-src-tauri/
-  src/
-    features/     # feature commands.rs and models.rs
-    infrastructure/
-      persistence/ # database.rs
-      integrations/ # git.rs
-    lib.rs
-    main.rs
-  capabilities/
-  icons/
-scripts/          # development and release automation
-app/              # user-facing packaged executable
-```
+Move existing material toward these homes only when related to the current change; do not create parallel or catch-all folders.
 
-Keep root-level files limited to repository-wide configuration and public documents, including `AGENTS.md`, `README.md`, `PRIVACY.md`, and `package.json`.
+## Build and verification
 
-## Verification
+Follow `ai/project/WORKFLOWS.md`. Before committing behavior changes, run its full quality gate. Keep component tests on `happy-dom`; `jsdom@29.1.1` caused Vitest worker startup timeouts in this Windows/Dropbox workspace.
 
-Before committing behavior changes, run:
+After cloning, run `npm.cmd run setup:local` so Cargo development output stays outside Dropbox. Release builds must use `scripts\Build-App.ps1`, remove scratch output only after success, preserve it after failure, and verify the exact `app\Orion.exe` used by the desktop shortcut.
 
-```powershell
-npm.cmd run lint
-npm.cmd run format:check
-npm.cmd test
-npm.cmd run build
-cargo test --manifest-path src-tauri\Cargo.toml
-cargo check --manifest-path src-tauri\Cargo.toml
-```
-
-Keep frontend component tests on `happy-dom`. In this Windows/Dropbox workspace, importing `jsdom@29.1.1` took about 133 seconds and caused Vitest workers to time out before running tests.
-
-For Windows release changes, run `scripts\Build-App.ps1` and test the exact artifact copied to `app\Orion.exe`.
-
-If Git is initialized after dependencies were installed, run `npm.cmd run prepare` again and verify `git config --get core.hooksPath` returns `.husky/_` before relying on the pre-commit hook.
+If Git was initialized after dependency installation, rerun `npm.cmd run prepare` and verify `git config --get core.hooksPath` returns `.husky/_`.
 
 ## Safety
 
-Never commit databases or their WAL/SHM sidecars, environment files, credentials, local exports, customer data, private screenshots, or generated release artifacts. Removing a project from Orion must never delete repository files.
+Never commit databases or sidecars, environment files, credentials, local exports, customer data, private screenshots, or generated release artifacts. Removing a project from Orion must never delete repository files.

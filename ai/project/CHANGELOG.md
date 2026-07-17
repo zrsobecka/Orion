@@ -1,5 +1,11 @@
 # Orion changelog
 
+## 2026-07-18
+
+- Moved codebase and workflow-diagram knowledge under `ai/project/` and reduced always-loaded repository context.
+- Standardized Cargo output outside Dropbox: reusable development cache, isolated release targets, cleanup only after successful packaging, and failure-cache retention.
+- Stopped duplicating release binaries under `artifacts/`; current portable and installer outputs now use stable names under ignored `app/`.
+
 ## 2026-07-17
 
 - Added durable manual project tasks with add, complete, reopen, and remove actions backed by SQLite migration 2.

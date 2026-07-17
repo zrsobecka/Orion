@@ -1,39 +1,45 @@
 # Orion build and verification
 
-## Development
+## Local setup and development
 
 ```powershell
+npm.cmd run setup:local
 npm.cmd run tauri dev
 ```
 
-The npm scripts use Vite's `runner` config loader. In the restricted Codex workspace, Vite's default bundled loader can make esbuild inspect parent directories outside the project and fail with `Access is denied`; the runner keeps configuration loading scoped to Orion. If the development dependency optimizer is still restricted, use `npm.cmd run build` followed by `npm.cmd run preview -- --configLoader runner` for visual QA of the production bundle.
+`setup:local` creates ignored `src-tauri/.cargo/config.toml` and sends the reusable development cache to `%LOCALAPPDATA%\Orion\cargo-target-dev`. This prevents manual Cargo and Tauri development builds from recreating `src-tauri\target` in Dropbox. The development cache is retained because it materially speeds up incremental compilation; it may be removed manually when disk space matters more than build speed.
 
-## Quality checks
+Vite uses the `runner` config loader because the restricted Codex workspace can deny esbuild access to parent directories. If dependency optimization is still restricted, use `npm.cmd run build` followed by `npm.cmd run preview -- --configLoader runner` for production-bundle visual QA.
+
+## Quality gate
 
 ```powershell
 npm.cmd run lint
 npm.cmd run format:check
 npm.cmd test
 npm.cmd run build
+cargo test --manifest-path src-tauri\Cargo.toml
 cargo check --manifest-path src-tauri\Cargo.toml
 ```
 
-## Windows artifact
+The normal release build runs this gate. `-SkipFrontendTests` is only a packaging diagnostic after an exact Vitest worker-startup timeout has been recorded; it never makes the test gate green.
 
-Run `scripts\Build-App.ps1`. The script uses a fresh Cargo target outside synchronized folders, runs frontend and Rust checks, builds the complete Tauri application, and writes:
+## Windows release and retention standard
 
-- the executable used locally to `app\Orion.exe`;
-- portable and installer artifacts to `artifacts\`;
-- SHA-256 hashes to `artifacts\SHA256SUMS.txt`.
+Run `scripts\Build-App.ps1`. Every release uses a unique `%LOCALAPPDATA%\Orion\builds\release-*` Cargo target, then copies only current final binaries to `app\` using stable names:
 
-To create or refresh the local desktop shortcut after a successful build:
+- `Orion.exe` — portable executable and desktop-shortcut target;
+- `Orion-setup.exe` — NSIS installer when produced;
+- `Orion.msi` — MSI installer when produced.
+
+After every check, package copy, and hash calculation succeeds, the script removes that release target and `frontend\dist`. If any step fails, both are retained and the script prints the release-target path for debugging. It never removes the reusable development cache or an unexpected directory. Release output is no longer duplicated under `artifacts\`.
+
+Create or refresh the desktop shortcut only after a successful build:
 
 ```powershell
 pwsh.exe -File scripts\Install-Local.ps1
 ```
 
-Both scripts pass filesystem paths as individual PowerShell arguments and support repository paths containing spaces.
+Before calling a release verified, launch the exact `app\Orion.exe`, exercise the critical workflow, and check its icon, version, and printed SHA-256. Public release still requires signed, clean-machine install, upgrade, restart, offline, and uninstall checks.
 
-The normal build must run frontend tests. In a restricted Codex Windows environment, Vitest workers may time out before loading any test file even though lint, TypeScript, Vite, and Rust work normally. After recording that exact worker-startup failure, use `scripts\Build-App.ps1 -SkipFrontendTests` only to verify packaging and the real executable. This switch does not turn the test gate green: rerun `npm.cmd test` in a normal terminal before merging.
-
-The first Rust verification needs network access to download crates that are not already in the local Cargo cache. A frontend-only build does not replace `cargo test`, `cargo check`, and launch verification of the packaged Tauri artifact.
+Legacy `src-tauri\target`, `%LOCALAPPDATA%\Orion\cargo-target*`, and `artifacts\` directories predate this standard. The scripts do not delete them automatically because they may contain failed-build evidence or private QA material; inspect and remove exact paths explicitly.
