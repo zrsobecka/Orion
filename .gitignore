@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+/frontend/dist/
 dist-ssr
 *.local
 .env
@@ -37,8 +37,8 @@ screenshots/
 
 # Tauri and local release output
 src-tauri/target/
-app/
-artifacts/
+/app/
+/artifacts/
 
 # Local application data and temporary files
 *.sqlite

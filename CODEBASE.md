@@ -6,18 +6,19 @@ Orion is one Tauri package: React owns the interface, Rust owns desktop access a
 
 ## Main areas
 
-| Path                                 | Responsibility                                                                       |
-| ------------------------------------ | ------------------------------------------------------------------------------------ |
-| `src/app/`                           | Application shell, navigation, startup, and global workspace feedback.               |
-| `src/features/projects/`             | Project workflow, feature inventory, Git projections, state coordination, and tests. |
-| `src/components/`                    | Small reusable interface primitives.                                                 |
-| `src/services/desktop-runtime.ts`    | The only frontend adapter to Tauri commands and native plugins.                      |
-| `src/services/demo-dashboard.ts`     | Generic browser-only demo data used outside Tauri.                                   |
-| `src-tauri/src/commands/`            | Narrow validated commands exposed to the frontend.                                   |
-| `src-tauri/src/services/database.rs` | SQLite initialization, schema, migrations, and queries.                              |
-| `src-tauri/src/services/git.rs`      | Safe Git process execution with argument arrays and output parsing.                  |
-| `docs/`                              | Product, architecture, build, and brand decisions.                                   |
-| `scripts/`                           | Reproducible Windows build and local shortcut scripts.                               |
+| Path                                               | Responsibility                                                                       |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `frontend/src/app/`                                | Application shell, navigation, startup, and global workspace feedback.               |
+| `frontend/src/features/projects/`                  | Project workflow, feature inventory, Git projections, state coordination, and tests. |
+| `frontend/src/shared/ui/`                          | Small reusable interface primitives.                                                 |
+| `frontend/src/infrastructure/desktop-runtime.ts`   | The only frontend adapter to Tauri commands and native plugins.                      |
+| `frontend/src/infrastructure/demo-dashboard.ts`    | Generic browser-only demo data used outside Tauri.                                   |
+| `src-tauri/src/features/projects/`                 | Validated native commands and project view models exposed to the frontend.           |
+| `src-tauri/src/domain/`                            | Project and feature domain records plus validated update inputs.                     |
+| `src-tauri/src/infrastructure/persistence/`        | SQLite initialization, schema, migrations, and queries.                              |
+| `src-tauri/src/infrastructure/integrations/git.rs` | Safe Git process execution with argument arrays and output parsing.                  |
+| `ai/`                                              | Maintained product, architecture, workflow, and brand knowledge.                     |
+| `scripts/`                                         | Reproducible Windows build and local shortcut scripts.                               |
 
 ## Data ownership
 
@@ -27,7 +28,7 @@ Orion is one Tauri package: React owns the interface, Rust owns desktop access a
 
 ## Safe extension points
 
-- Add project behavior inside `src/features/projects/` and expose native needs through `desktop-runtime.ts`.
+- Add project behavior inside `frontend/src/features/projects/` and expose native needs through `desktop-runtime.ts`.
 - Add Rust platform access behind a narrow command and a cohesive service.
 - Add database changes as versioned, repeatable migrations before changing UI assumptions.
 - Keep remote services optional and document every network or personal-data flow before enabling them.
