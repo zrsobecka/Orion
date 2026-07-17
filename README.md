@@ -48,6 +48,17 @@ cargo check --manifest-path src-tauri\Cargo.toml
 
 Run `pwsh.exe -File scripts\Build-App.ps1` for the complete Windows build. See [ai/project/WORKFLOWS.md](ai/project/WORKFLOWS.md) for artifact paths and local shortcut setup.
 
+## Changing the app icon
+
+Put one square transparent PNG (preferably `1024x1024 px`, minimum `256x256 px`)
+in `..\new-icons\orion.png`. From `Desktop Apps`, run:
+
+```powershell
+.\tools\Apply-NewIcon.ps1 -App Orion
+```
+
+Use `-Publish` after approving the icon to rebuild the executable and refresh its desktop shortcut.
+
 ## Data and privacy
 
 Orion stores registered repository paths, project goals, next actions, and feature notes in `orion.sqlite3` under the operating system's application-data directory. Git metadata is read locally on refresh. Removing a project from Orion never deletes its repository.

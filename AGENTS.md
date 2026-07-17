@@ -14,6 +14,43 @@ Keep Orion a local-first, scan-friendly mission control for application projects
 - Store mutable data through Tauri's OS application-data path, never in the repository.
 - Preserve the SQLite schema through explicit migrations.
 
+### Canonical folder layout
+
+Treat the following as Orion's target organization. Keep new code and project knowledge in these homes; when refactoring, move existing material toward this layout only when it is related to the change, rather than creating parallel or catch-all folders.
+
+```text
+ai/
+  project/        # CODEBASE.md, ARCHITECTURE.md, WORKFLOWS.md
+  product/        # PRODUCT.md, BRAND.md
+  features/       # one document per feature, e.g. projects.md
+  integrations/   # integration notes, e.g. git.md and sqlite.md
+  decisions/      # concise architecture/product decision records
+frontend/
+  public/
+  src/
+    app/          # App.tsx and shell/
+    features/     # feature modules: components/, hooks/, model/, types.ts, index.ts
+    infrastructure/ # desktop-runtime.ts; the only frontend-to-native boundary
+    shared/ui/
+    assets/
+    styles/
+    main.tsx
+src-tauri/
+  src/
+    features/     # feature commands.rs and models.rs
+    infrastructure/
+      persistence/ # database.rs
+      integrations/ # git.rs
+    lib.rs
+    main.rs
+  capabilities/
+  icons/
+scripts/          # development and release automation
+app/              # user-facing packaged executable
+```
+
+Keep root-level files limited to repository-wide configuration and public documents, including `AGENTS.md`, `README.md`, `PRIVACY.md`, and `package.json`.
+
 ## Verification
 
 Before committing behavior changes, run:
