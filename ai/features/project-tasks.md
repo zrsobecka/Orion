@@ -6,12 +6,13 @@ Each registered application has one small manual list where the user records wha
 
 ## Behavior
 
-- A task belongs to exactly one registered project.
+- A task belongs to exactly one registered project and, when created, to its active focus.
 - A task can optionally point to one feature from that same project. General work can remain unlinked.
 - The user can add a task with a title of 1–200 characters.
 - A task can be completed or reopened.
 - A task can be removed.
 - Open tasks appear before completed tasks; equally recent tasks retain a stable order.
+- Starting a new focus leaves existing tasks attached to the previous focus.
 - Removing a project from Orion also removes its Orion-owned tasks without touching repository files.
 
 ## Deliberate non-goals

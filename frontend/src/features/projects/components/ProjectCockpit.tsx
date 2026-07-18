@@ -30,6 +30,7 @@ import type {
   FeatureStatus,
   ProjectSnapshot,
   ProjectStatus,
+  StartProjectFocusInput,
   UpdateProjectInput,
 } from "../types";
 import { FeatureSuggestionsModal } from "./FeatureSuggestionsModal";
@@ -45,6 +46,7 @@ interface ProjectCockpitProps {
   onAcceptFeatureSuggestions: (input: AcceptFeatureSuggestionsInput) => Promise<void>;
   onAddProjectTask: (input: AddProjectTaskInput) => Promise<void>;
   onSetProjectTaskCompleted: (taskId: string, completed: boolean) => Promise<void>;
+  onStartProjectFocus: (input: StartProjectFocusInput) => Promise<void>;
   onRemoveProjectTask: (taskId: string) => Promise<void>;
   onUpdateFeatureStatus: (featureId: string, status: FeatureStatus) => void;
   onRemoveProject: (projectId: string) => Promise<void>;
@@ -62,6 +64,7 @@ export function ProjectCockpit({
   onAcceptFeatureSuggestions,
   onAddProjectTask,
   onSetProjectTaskCompleted,
+  onStartProjectFocus,
   onRemoveProjectTask,
   onUpdateFeatureStatus,
   onRemoveProject,
@@ -75,7 +78,10 @@ export function ProjectCockpit({
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const counts = getFeatureCounts(snapshot);
-  const openTaskCount = snapshot.tasks.filter((task) => !task.completed).length;
+  const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
+  const openTaskCount = snapshot.tasks.filter(
+    (task) => task.focusId === activeFocus?.id && !task.completed,
+  ).length;
   const features = useMemo(
     () =>
       [...snapshot.features].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
@@ -149,11 +155,13 @@ export function ProjectCockpit({
         />
         <ProjectTasks
           features={snapshot.features}
+          focuses={snapshot.focuses}
           projectId={snapshot.project.id}
           tasks={snapshot.tasks}
           onAdd={onAddProjectTask}
           onRemove={onRemoveProjectTask}
           onSetCompleted={onSetProjectTaskCompleted}
+          onStartFocus={onStartProjectFocus}
         />
       </div>
 

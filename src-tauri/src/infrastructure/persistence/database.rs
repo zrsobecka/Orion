@@ -5,7 +5,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::domain::{
     AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, Project, ProjectFeature,
-    ProjectTask, UpdateProjectInput,
+    ProjectFocus, ProjectTask, StartProjectFocusInput, UpdateProjectInput,
 };
 
 pub struct AppState {
@@ -82,9 +82,24 @@ fn migrate(connection: &Connection) -> Result<(), String> {
             CREATE INDEX IF NOT EXISTS idx_features_project_priority
                 ON features(project_id, priority, created_at);
 
+            CREATE TABLE IF NOT EXISTS project_focuses (
+                id TEXT PRIMARY KEY NOT NULL,
+                project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+                status TEXT NOT NULL CHECK(status IN ('active', 'archived')),
+                started_at TEXT NOT NULL,
+                ended_at TEXT
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_project_focuses_one_active
+                ON project_focuses(project_id) WHERE status = 'active';
+            CREATE INDEX IF NOT EXISTS idx_project_focuses_history
+                ON project_focuses(project_id, started_at DESC);
+
             CREATE TABLE IF NOT EXISTS project_tasks (
                 id TEXT PRIMARY KEY NOT NULL,
                 project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                focus_id TEXT REFERENCES project_focuses(id) ON DELETE SET NULL,
                 feature_id TEXT REFERENCES features(id) ON DELETE SET NULL,
                 title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
                 completed INTEGER NOT NULL DEFAULT 0 CHECK(completed IN (0, 1)),
@@ -96,8 +111,10 @@ fn migrate(connection: &Connection) -> Result<(), String> {
                 ON project_tasks(project_id, completed, created_at);
             CREATE INDEX IF NOT EXISTS idx_project_tasks_feature
                 ON project_tasks(feature_id, completed, created_at);
+            CREATE INDEX IF NOT EXISTS idx_project_tasks_focus
+                ON project_tasks(focus_id, completed, created_at);
 
-            PRAGMA user_version = 3;
+            PRAGMA user_version = 4;
             COMMIT;
             "#,
             )
@@ -121,7 +138,33 @@ fn migrate(connection: &Connection) -> Result<(), String> {
                     REFERENCES features(id) ON DELETE SET NULL;
                 CREATE INDEX idx_project_tasks_feature
                     ON project_tasks(feature_id, completed, created_at);
-                PRAGMA user_version = 3;
+                CREATE TABLE project_focuses (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                    title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+                    status TEXT NOT NULL CHECK(status IN ('active', 'archived')),
+                    started_at TEXT NOT NULL,
+                    ended_at TEXT
+                );
+                CREATE UNIQUE INDEX idx_project_focuses_one_active
+                    ON project_focuses(project_id) WHERE status = 'active';
+                CREATE INDEX idx_project_focuses_history
+                    ON project_focuses(project_id, started_at DESC);
+                INSERT INTO project_focuses (id, project_id, title, status, started_at)
+                    SELECT 'focus_' || lower(hex(randomblob(12))), id,
+                        CASE WHEN trim(next_action) = '' THEN 'Current focus' ELSE next_action END,
+                        'active', updated_at
+                    FROM projects;
+                ALTER TABLE project_tasks ADD COLUMN focus_id TEXT
+                    REFERENCES project_focuses(id) ON DELETE SET NULL;
+                UPDATE project_tasks SET focus_id = (
+                    SELECT id FROM project_focuses
+                    WHERE project_focuses.project_id = project_tasks.project_id
+                        AND status = 'active'
+                );
+                CREATE INDEX idx_project_tasks_focus
+                    ON project_tasks(focus_id, completed, created_at);
+                PRAGMA user_version = 4;
                 COMMIT;
                 "#,
             )
@@ -135,12 +178,74 @@ fn migrate(connection: &Connection) -> Result<(), String> {
                     REFERENCES features(id) ON DELETE SET NULL;
                 CREATE INDEX idx_project_tasks_feature
                     ON project_tasks(feature_id, completed, created_at);
-                PRAGMA user_version = 3;
+                CREATE TABLE project_focuses (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                    title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+                    status TEXT NOT NULL CHECK(status IN ('active', 'archived')),
+                    started_at TEXT NOT NULL,
+                    ended_at TEXT
+                );
+                CREATE UNIQUE INDEX idx_project_focuses_one_active
+                    ON project_focuses(project_id) WHERE status = 'active';
+                CREATE INDEX idx_project_focuses_history
+                    ON project_focuses(project_id, started_at DESC);
+                INSERT INTO project_focuses (id, project_id, title, status, started_at)
+                    SELECT 'focus_' || lower(hex(randomblob(12))), id,
+                        CASE WHEN trim(next_action) = '' THEN 'Current focus' ELSE next_action END,
+                        'active', updated_at
+                    FROM projects;
+                ALTER TABLE project_tasks ADD COLUMN focus_id TEXT
+                    REFERENCES project_focuses(id) ON DELETE SET NULL;
+                UPDATE project_tasks SET focus_id = (
+                    SELECT id FROM project_focuses
+                    WHERE project_focuses.project_id = project_tasks.project_id
+                        AND status = 'active'
+                );
+                CREATE INDEX idx_project_tasks_focus
+                    ON project_tasks(focus_id, completed, created_at);
+                PRAGMA user_version = 4;
                 COMMIT;
                 "#,
             )
             .map_err(|error| format!("Could not add task-feature links: {error}"))?;
-    } else if version > 3 {
+    } else if version == 3 {
+        connection
+            .execute_batch(
+                r#"
+                BEGIN;
+                CREATE TABLE project_focuses (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                    title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+                    status TEXT NOT NULL CHECK(status IN ('active', 'archived')),
+                    started_at TEXT NOT NULL,
+                    ended_at TEXT
+                );
+                CREATE UNIQUE INDEX idx_project_focuses_one_active
+                    ON project_focuses(project_id) WHERE status = 'active';
+                CREATE INDEX idx_project_focuses_history
+                    ON project_focuses(project_id, started_at DESC);
+                INSERT INTO project_focuses (id, project_id, title, status, started_at)
+                    SELECT 'focus_' || lower(hex(randomblob(12))), id,
+                        CASE WHEN trim(next_action) = '' THEN 'Current focus' ELSE next_action END,
+                        'active', updated_at
+                    FROM projects;
+                ALTER TABLE project_tasks ADD COLUMN focus_id TEXT
+                    REFERENCES project_focuses(id) ON DELETE SET NULL;
+                UPDATE project_tasks SET focus_id = (
+                    SELECT id FROM project_focuses
+                    WHERE project_focuses.project_id = project_tasks.project_id
+                        AND status = 'active'
+                );
+                CREATE INDEX idx_project_tasks_focus
+                    ON project_tasks(focus_id, completed, created_at);
+                PRAGMA user_version = 4;
+                COMMIT;
+                "#,
+            )
+            .map_err(|error| format!("Could not add project focuses: {error}"))?;
+    } else if version > 4 {
         return Err(format!(
             "This Orion database was created by a newer app version ({version})."
         ));
@@ -201,19 +306,32 @@ fn row_to_task(row: &Row<'_>) -> rusqlite::Result<ProjectTask> {
     Ok(ProjectTask {
         id: row.get(0)?,
         project_id: row.get(1)?,
-        feature_id: row.get(2)?,
-        title: row.get(3)?,
-        completed: row.get(4)?,
-        created_at: row.get(5)?,
-        updated_at: row.get(6)?,
+        focus_id: row.get(2)?,
+        feature_id: row.get(3)?,
+        title: row.get(4)?,
+        completed: row.get(5)?,
+        created_at: row.get(6)?,
+        updated_at: row.get(7)?,
+    })
+}
+
+fn row_to_focus(row: &Row<'_>) -> rusqlite::Result<ProjectFocus> {
+    Ok(ProjectFocus {
+        id: row.get(0)?,
+        project_id: row.get(1)?,
+        title: row.get(2)?,
+        status: row.get(3)?,
+        started_at: row.get(4)?,
+        ended_at: row.get(5)?,
     })
 }
 
 const PROJECT_COLUMNS: &str = "id, name, path, goal, next_action, status, created_at, updated_at";
 const FEATURE_COLUMNS: &str =
     "id, project_id, name, description, status, priority, evidence, created_at, updated_at";
+const FOCUS_COLUMNS: &str = "id, project_id, title, status, started_at, ended_at";
 const TASK_COLUMNS: &str =
-    "id, project_id, feature_id, title, completed, created_at, updated_at";
+    "id, project_id, focus_id, feature_id, title, completed, created_at, updated_at";
 
 pub fn list_projects(connection: &Connection) -> Result<Vec<Project>, String> {
     let mut statement = connection
@@ -455,6 +573,61 @@ pub fn list_project_tasks(
         .map_err(|error| format!("Could not decode a project task: {error}"))
 }
 
+pub fn list_project_focuses(
+    connection: &Connection,
+    project_id: &str,
+) -> Result<Vec<ProjectFocus>, String> {
+    let mut statement = connection
+        .prepare(&format!(
+            "SELECT {FOCUS_COLUMNS} FROM project_focuses
+             WHERE project_id = ?1
+             ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, started_at DESC, rowid DESC"
+        ))
+        .map_err(|error| format!("Could not prepare the project focus list: {error}"))?;
+    let rows = statement
+        .query_map([project_id], row_to_focus)
+        .map_err(|error| format!("Could not read the project focus list: {error}"))?;
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("Could not decode a project focus: {error}"))
+}
+
+pub fn start_project_focus(
+    connection: &mut Connection,
+    input: &StartProjectFocusInput,
+) -> Result<String, String> {
+    let title = input.title.trim();
+    if title.is_empty() || input.title.chars().count() > 200 {
+        return Err("Focus title must contain between 1 and 200 characters.".to_string());
+    }
+    get_project(connection, &input.project_id)?;
+
+    let transaction = connection
+        .transaction()
+        .map_err(|error| format!("Could not start a focus update: {error}"))?;
+    let timestamp = now(&transaction)?;
+    transaction
+        .execute(
+            "UPDATE project_focuses
+             SET status = 'archived', ended_at = ?2
+             WHERE project_id = ?1 AND status = 'active'",
+            params![input.project_id, timestamp],
+        )
+        .map_err(|error| format!("Could not archive the previous focus: {error}"))?;
+    let id = new_id(&transaction, "focus")?;
+    transaction
+        .execute(
+            "INSERT INTO project_focuses
+             (id, project_id, title, status, started_at)
+             VALUES (?1, ?2, ?3, 'active', ?4)",
+            params![id, input.project_id, title, timestamp],
+        )
+        .map_err(|error| format!("Could not create the project focus: {error}"))?;
+    transaction
+        .commit()
+        .map_err(|error| format!("Could not save the project focus: {error}"))?;
+    Ok(input.project_id.clone())
+}
+
 pub fn add_project_task(
     connection: &Connection,
     input: &AddProjectTaskInput,
@@ -464,6 +637,15 @@ pub fn add_project_task(
         return Err("Task title must contain between 1 and 200 characters.".to_string());
     }
     get_project(connection, &input.project_id)?;
+    let focus_id = connection
+        .query_row(
+            "SELECT id FROM project_focuses WHERE project_id = ?1 AND status = 'active'",
+            [&input.project_id],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|error| format!("Could not check the active project focus: {error}"))?
+        .ok_or_else(|| "Start a project focus before adding tasks.".to_string())?;
     if let Some(feature_id) = input.feature_id.as_deref() {
         let feature_project_id = connection
             .query_row(
@@ -484,9 +666,16 @@ pub fn add_project_task(
     connection
         .execute(
             "INSERT INTO project_tasks
-            (id, project_id, feature_id, title, completed, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, 0, ?5, ?5)",
-            params![id, input.project_id, input.feature_id, title, timestamp],
+            (id, project_id, focus_id, feature_id, title, completed, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6, ?6)",
+            params![
+                id,
+                input.project_id,
+                focus_id,
+                input.feature_id,
+                title,
+                timestamp
+            ],
         )
         .map_err(|error| format!("Could not add the project task: {error}"))?;
     Ok(input.project_id.clone())
@@ -561,6 +750,23 @@ mod tests {
         let connection = Connection::open_in_memory().expect("in-memory database");
         migrate(&connection).expect("schema migration");
         connection
+    }
+
+    fn start_focus(connection: &mut Connection, project_id: &str, title: &str) -> String {
+        start_project_focus(
+            connection,
+            &StartProjectFocusInput {
+                project_id: project_id.to_string(),
+                title: title.to_string(),
+            },
+        )
+        .expect("focus");
+        list_project_focuses(connection, project_id)
+            .expect("focuses")
+            .into_iter()
+            .find(|focus| focus.status == "active")
+            .expect("active focus")
+            .id
     }
 
     #[test]
@@ -646,8 +852,9 @@ mod tests {
 
     #[test]
     fn project_tasks_are_scoped_sorted_and_persisted() {
-        let connection = test_connection();
+        let mut connection = test_connection();
         let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        let focus_id = start_focus(&mut connection, &project.id, "Ship the cockpit");
         let first = AddProjectTaskInput {
             project_id: project.id.clone(),
             feature_id: None,
@@ -664,6 +871,7 @@ mod tests {
         let tasks = list_project_tasks(&connection, &project.id).expect("task list");
         assert_eq!(tasks.len(), 2);
         assert_eq!(tasks[0].title, "Verify the executable");
+        assert_eq!(tasks[0].focus_id.as_deref(), Some(focus_id.as_str()));
 
         set_project_task_completed(&connection, &tasks[0].id, true).expect("complete task");
         let tasks = list_project_tasks(&connection, &project.id).expect("updated list");
@@ -673,9 +881,11 @@ mod tests {
 
     #[test]
     fn project_tasks_can_link_only_to_features_from_the_same_project() {
-        let connection = test_connection();
+        let mut connection = test_connection();
         let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
         let other = add_project(&connection, "Other", "C:\\Apps\\Other").expect("other project");
+        start_focus(&mut connection, &project.id, "Polish Orion");
+        start_focus(&mut connection, &other.id, "Polish Other");
         add_feature(
             &connection,
             &AddFeatureInput {
@@ -723,8 +933,9 @@ mod tests {
 
     #[test]
     fn removing_a_project_removes_its_tasks() {
-        let connection = test_connection();
+        let mut connection = test_connection();
         let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        start_focus(&mut connection, &project.id, "Keep this local");
         add_project_task(
             &connection,
             &AddProjectTaskInput {
@@ -739,5 +950,86 @@ mod tests {
         assert!(list_project_tasks(&connection, &project.id)
             .expect("task list")
             .is_empty());
+    }
+
+    #[test]
+    fn starting_a_new_focus_archives_the_previous_focus_without_moving_tasks() {
+        let mut connection = test_connection();
+        let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        let first_focus = start_focus(&mut connection, &project.id, "Build the task loop");
+        add_project_task(
+            &connection,
+            &AddProjectTaskInput {
+                project_id: project.id.clone(),
+                feature_id: None,
+                title: "Persist tasks".to_string(),
+            },
+        )
+        .expect("task");
+
+        let second_focus = start_focus(&mut connection, &project.id, "Explain commit evidence");
+        let focuses = list_project_focuses(&connection, &project.id).expect("focus history");
+        assert_eq!(focuses.len(), 2);
+        assert_eq!(focuses[0].id, second_focus);
+        assert_eq!(focuses[0].status, "active");
+        assert_eq!(focuses[1].id, first_focus);
+        assert_eq!(focuses[1].status, "archived");
+        assert!(focuses[1].ended_at.is_some());
+
+        let tasks = list_project_tasks(&connection, &project.id).expect("tasks");
+        assert_eq!(tasks[0].focus_id.as_deref(), Some(first_focus.as_str()));
+    }
+
+    #[test]
+    fn version_three_migration_preserves_tasks_in_an_active_focus() {
+        let connection = Connection::open_in_memory().expect("in-memory database");
+        connection
+            .execute_batch(
+                r#"
+                CREATE TABLE projects (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    name TEXT NOT NULL,
+                    path TEXT NOT NULL,
+                    goal TEXT NOT NULL DEFAULT '',
+                    next_action TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE features (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE
+                );
+                CREATE TABLE project_tasks (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                    feature_id TEXT REFERENCES features(id) ON DELETE SET NULL,
+                    title TEXT NOT NULL,
+                    completed INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                INSERT INTO projects
+                    (id, name, path, goal, next_action, status, created_at, updated_at)
+                    VALUES ('project-1', 'Orion', 'C:\Apps\Orion', '', 'Ship the cockpit',
+                        'active', '2026-07-17T10:00:00Z', '2026-07-17T10:00:00Z');
+                INSERT INTO project_tasks
+                    (id, project_id, title, completed, created_at, updated_at)
+                    VALUES ('task-1', 'project-1', 'Keep this task', 1,
+                        '2026-07-17T10:00:00Z', '2026-07-17T10:00:00Z');
+                PRAGMA user_version = 3;
+                "#,
+            )
+            .expect("version three fixture");
+
+        migrate(&connection).expect("focus migration");
+        let focuses = list_project_focuses(&connection, "project-1").expect("focuses");
+        let tasks = list_project_tasks(&connection, "project-1").expect("tasks");
+        assert_eq!(focuses.len(), 1);
+        assert_eq!(focuses[0].title, "Ship the cockpit");
+        assert_eq!(focuses[0].status, "active");
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].title, "Keep this task");
+        assert_eq!(tasks[0].focus_id.as_deref(), Some(focuses[0].id.as_str()));
     }
 }

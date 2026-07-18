@@ -1634,6 +1634,67 @@ h3 {
   border-radius: 999px;
 }
 
+.task-console__header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 7px;
+  align-items: center;
+}
+
+.focus-composer {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 7px;
+  padding: 13px;
+  background: rgba(12, 26, 45, 0.84);
+  border-bottom: 1px solid rgba(31, 69, 101, 0.5);
+}
+
+.focus-composer > label {
+  color: #bdd2e3;
+  font-size: 0.64rem;
+  font-weight: 650;
+}
+
+.focus-composer > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.focus-composer input {
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  color: var(--text);
+  background: rgba(3, 10, 22, 0.86);
+  border: 1px solid #315574;
+  border-radius: var(--radius-md);
+}
+
+.focus-composer input:focus {
+  border-color: rgba(141, 125, 255, 0.75);
+  box-shadow: 0 0 18px rgba(141, 125, 255, 0.12);
+}
+
+.focus-composer small,
+.task-console__history {
+  color: #7792a8;
+  font-size: 0.57rem;
+}
+
+.task-console__history {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 13px;
+  background: rgba(7, 16, 30, 0.72);
+  border-bottom: 1px solid rgba(31, 69, 101, 0.38);
+}
+
 .task-composer {
   position: relative;
   z-index: 2;

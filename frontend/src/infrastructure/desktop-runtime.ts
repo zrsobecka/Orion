@@ -9,6 +9,7 @@ import type {
   FeatureAnalysisResult,
   FeatureStatus,
   ProjectSnapshot,
+  StartProjectFocusInput,
   UpdateProjectInput,
 } from "../features/projects/types";
 import { demoDashboard } from "./demo-dashboard";
@@ -135,15 +136,39 @@ export const desktopRuntime = {
     if (isTauri()) return invoke<ProjectSnapshot>("add_project_task", { input });
 
     const snapshot = findBrowserSnapshot(input.projectId);
+    const focus = snapshot.focuses.find(({ status }) => status === "active");
+    if (!focus) throw new Error("Start a project focus before adding tasks.");
     const now = new Date().toISOString();
     snapshot.tasks.unshift({
       id: crypto.randomUUID(),
       projectId: input.projectId,
+      focusId: focus.id,
       featureId: input.featureId,
       title: input.title.trim(),
       completed: false,
       createdAt: now,
       updatedAt: now,
+    });
+    return structuredClone(snapshot);
+  },
+
+  async startProjectFocus(input: StartProjectFocusInput): Promise<ProjectSnapshot> {
+    if (isTauri()) return invoke<ProjectSnapshot>("start_project_focus", { input });
+    const snapshot = findBrowserSnapshot(input.projectId);
+    const now = new Date().toISOString();
+    for (const focus of snapshot.focuses) {
+      if (focus.status === "active") {
+        focus.status = "archived";
+        focus.endedAt = now;
+      }
+    }
+    snapshot.focuses.unshift({
+      id: crypto.randomUUID(),
+      projectId: input.projectId,
+      title: input.title.trim(),
+      status: "active",
+      startedAt: now,
+      endedAt: null,
     });
     return structuredClone(snapshot);
   },

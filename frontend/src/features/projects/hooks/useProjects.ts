@@ -7,6 +7,7 @@ import type {
   FeatureAnalysisResult,
   FeatureStatus,
   ProjectSnapshot,
+  StartProjectFocusInput,
   UpdateProjectInput,
 } from "../types";
 
@@ -156,6 +157,19 @@ export function useProjects() {
     [replaceSnapshot],
   );
 
+  const startProjectFocus = useCallback(
+    async (input: StartProjectFocusInput) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.startProjectFocus(input));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
   const setProjectTaskCompleted = useCallback(
     async (taskId: string, completed: boolean) => {
       setError(null);
@@ -220,6 +234,7 @@ export function useProjects() {
     acceptFeatureSuggestions,
     updateFeatureStatus,
     addProjectTask,
+    startProjectFocus,
     setProjectTaskCompleted,
     removeProjectTask,
     removeProject,

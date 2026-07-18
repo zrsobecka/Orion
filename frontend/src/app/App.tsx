@@ -90,6 +90,7 @@ export default function App() {
               onRemoveProject={workspace.removeProject}
               onRemoveProjectTask={workspace.removeProjectTask}
               onSetProjectTaskCompleted={workspace.setProjectTaskCompleted}
+              onStartProjectFocus={workspace.startProjectFocus}
               onUpdateFeatureStatus={workspace.updateFeatureStatus}
               onUpdateProject={workspace.updateProject}
             />

@@ -49,10 +49,21 @@ export const demoDashboard: Dashboard = {
           updatedAt: "2026-07-13T09:00:00Z",
         },
       ],
+      focuses: [
+        {
+          id: "focus-orion",
+          projectId: "orion-demo",
+          title: "Verify the first native project-import loop",
+          status: "active",
+          startedAt: "2026-07-13T11:00:00Z",
+          endedAt: null,
+        },
+      ],
       tasks: [
         {
           id: "t-map",
           projectId: "orion-demo",
+          focusId: "focus-orion",
           featureId: "f-overview",
           title: "Turn the project cockpit into a visual mission map",
           completed: false,
@@ -62,6 +73,7 @@ export const demoDashboard: Dashboard = {
         {
           id: "t-native",
           projectId: "orion-demo",
+          focusId: "focus-orion",
           featureId: "f-git",
           title: "Verify the exact packaged Orion.exe",
           completed: false,
@@ -71,6 +83,7 @@ export const demoDashboard: Dashboard = {
         {
           id: "t-import",
           projectId: "orion-demo",
+          focusId: "focus-orion",
           featureId: "f-overview",
           title: "Connect the native repository picker",
           completed: true,
@@ -161,10 +174,21 @@ export const demoDashboard: Dashboard = {
           updatedAt: "2026-07-12T19:00:00Z",
         },
       ],
+      focuses: [
+        {
+          id: "focus-menma",
+          projectId: "menma-demo",
+          title: "Connect the story room to a selected local model",
+          status: "active",
+          startedAt: "2026-07-12T19:00:00Z",
+          endedAt: null,
+        },
+      ],
       tasks: [
         {
           id: "m-task-model",
           projectId: "menma-demo",
+          focusId: "focus-menma",
           featureId: "m-model",
           title: "Connect the story room to the selected local model",
           completed: false,

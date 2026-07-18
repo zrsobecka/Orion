@@ -5,7 +5,7 @@ use tauri::State;
 use crate::{
     domain::{
         AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, Project,
-        ProjectFeature, ProjectTask, UpdateProjectInput,
+        ProjectFeature, ProjectFocus, ProjectTask, StartProjectFocusInput, UpdateProjectInput,
     },
     infrastructure::{
         integrations::git::{self, GitSnapshot},
@@ -20,19 +20,21 @@ use database::AppState;
 fn project_snapshot(
     project: Project,
     features: Vec<ProjectFeature>,
+    focuses: Vec<ProjectFocus>,
     tasks: Vec<ProjectTask>,
 ) -> ProjectSnapshot {
     let git = git::read_snapshot(&project.path).unwrap_or_else(GitSnapshot::unavailable);
     ProjectSnapshot {
         project,
         features,
+        focuses,
         tasks,
         git,
     }
 }
 
 fn load_snapshot(state: &State<'_, AppState>, project_id: &str) -> Result<ProjectSnapshot, String> {
-    let (project, features, tasks) = {
+    let (project, features, focuses, tasks) = {
         let connection = state
             .connection
             .lock()
@@ -40,15 +42,16 @@ fn load_snapshot(state: &State<'_, AppState>, project_id: &str) -> Result<Projec
         (
             database::get_project(&connection, project_id)?,
             database::list_features(&connection, project_id)?,
+            database::list_project_focuses(&connection, project_id)?,
             database::list_project_tasks(&connection, project_id)?,
         )
     };
-    Ok(project_snapshot(project, features, tasks))
+    Ok(project_snapshot(project, features, focuses, tasks))
 }
 
 #[tauri::command]
 pub fn get_dashboard(state: State<'_, AppState>) -> Result<Dashboard, String> {
-    let (projects, features, tasks, refreshed_at) = {
+    let (projects, features, focuses, tasks, refreshed_at) = {
         let connection = state
             .connection
             .lock()
@@ -62,15 +65,22 @@ pub fn get_dashboard(state: State<'_, AppState>) -> Result<Dashboard, String> {
             .iter()
             .map(|project| database::list_project_tasks(&connection, &project.id))
             .collect::<Result<Vec<_>, _>>()?;
+        let focuses = projects
+            .iter()
+            .map(|project| database::list_project_focuses(&connection, &project.id))
+            .collect::<Result<Vec<_>, _>>()?;
         let refreshed_at = database::current_timestamp(&connection)?;
-        (projects, features, tasks, refreshed_at)
+        (projects, features, focuses, tasks, refreshed_at)
     };
 
     let projects = projects
         .into_iter()
         .zip(features)
+        .zip(focuses)
         .zip(tasks)
-        .map(|((project, features), tasks)| project_snapshot(project, features, tasks))
+        .map(|(((project, features), focuses), tasks)| {
+            project_snapshot(project, features, focuses, tasks)
+        })
         .collect();
     Ok(Dashboard {
         projects,
@@ -198,6 +208,21 @@ pub fn add_project_task(
             .lock()
             .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
         database::add_project_task(&connection, &input)?
+    };
+    load_snapshot(&state, &project_id)
+}
+
+#[tauri::command]
+pub fn start_project_focus(
+    input: StartProjectFocusInput,
+    state: State<'_, AppState>,
+) -> Result<ProjectSnapshot, String> {
+    let project_id = {
+        let mut connection = state
+            .connection
+            .lock()
+            .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
+        database::start_project_focus(&mut connection, &input)?
     };
     load_snapshot(&state, &project_id)
 }

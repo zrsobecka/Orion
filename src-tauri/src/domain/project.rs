@@ -32,11 +32,23 @@ pub struct ProjectFeature {
 pub struct ProjectTask {
     pub id: String,
     pub project_id: String,
+    pub focus_id: Option<String>,
     pub feature_id: Option<String>,
     pub title: String,
     pub completed: bool,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectFocus {
+    pub id: String,
+    pub project_id: String,
+    pub title: String,
+    pub status: String,
+    pub started_at: String,
+    pub ended_at: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,6 +76,13 @@ pub struct AddFeatureInput {
 pub struct AddProjectTaskInput {
     pub project_id: String,
     pub feature_id: Option<String>,
+    pub title: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StartProjectFocusInput {
+    pub project_id: String,
     pub title: String,
 }
 

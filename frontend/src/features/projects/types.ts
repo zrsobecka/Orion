@@ -28,11 +28,21 @@ export interface ProjectFeature {
 export interface ProjectTask {
   id: string;
   projectId: string;
+  focusId: string | null;
   featureId: string | null;
   title: string;
   completed: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProjectFocus {
+  id: string;
+  projectId: string;
+  title: string;
+  status: "active" | "archived";
+  startedAt: string;
+  endedAt: string | null;
 }
 
 export interface GitCommit {
@@ -66,6 +76,7 @@ export interface GitSnapshot {
 export interface ProjectSnapshot {
   project: Project;
   features: ProjectFeature[];
+  focuses: ProjectFocus[];
   tasks: ProjectTask[];
   git: GitSnapshot;
 }
@@ -94,6 +105,11 @@ export interface AddFeatureInput {
 export interface AddProjectTaskInput {
   projectId: string;
   featureId: string | null;
+  title: string;
+}
+
+export interface StartProjectFocusInput {
+  projectId: string;
   title: string;
 }
 

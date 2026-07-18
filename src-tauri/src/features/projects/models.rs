@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::{
-    domain::{FeatureSuggestion, Project, ProjectFeature, ProjectTask},
+    domain::{FeatureSuggestion, Project, ProjectFeature, ProjectFocus, ProjectTask},
     infrastructure::integrations::git::GitSnapshot,
 };
 
@@ -10,6 +10,7 @@ use crate::{
 pub struct ProjectSnapshot {
     pub project: Project,
     pub features: Vec<ProjectFeature>,
+    pub focuses: Vec<ProjectFocus>,
     pub tasks: Vec<ProjectTask>,
     pub git: GitSnapshot,
 }
