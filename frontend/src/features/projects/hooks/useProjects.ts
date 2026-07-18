@@ -4,10 +4,12 @@ import type {
   AcceptFeatureSuggestionsInput,
   AddFeatureInput,
   AddProjectTaskInput,
+  CommitAnalysis,
   FeatureAnalysisResult,
   FeatureStatus,
   GitCommitDetails,
   ProjectSnapshot,
+  ReviewCommitAnalysisInput,
   StartProjectFocusInput,
   UpdateProjectInput,
 } from "../types";
@@ -126,6 +128,25 @@ export function useProjects() {
     [],
   );
 
+  const analyzeCommit = useCallback(
+    (projectId: string, hash: string): Promise<CommitAnalysis> =>
+      desktopRuntime.analyzeCommit(projectId, hash),
+    [],
+  );
+
+  const reviewCommitAnalysis = useCallback(
+    async (input: ReviewCommitAnalysisInput) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.reviewCommitAnalysis(input));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
   const acceptFeatureSuggestions = useCallback(
     async (input: AcceptFeatureSuggestionsInput) => {
       setError(null);
@@ -239,6 +260,8 @@ export function useProjects() {
     addFeature,
     analyzeProjectFeatures,
     getCommitDetails,
+    analyzeCommit,
+    reviewCommitAnalysis,
     acceptFeatureSuggestions,
     updateFeatureStatus,
     addProjectTask,

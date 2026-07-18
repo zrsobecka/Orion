@@ -71,6 +71,42 @@ export interface GitCommitDetails {
   diffTruncated: boolean;
 }
 
+export interface CommitTaskSuggestion {
+  taskId: string;
+  reason: string;
+}
+
+export interface CommitFeatureSuggestion {
+  featureId: string;
+  status: FeatureStatus;
+  reason: string;
+}
+
+export interface CommitAnalysis {
+  commitHash: string;
+  model: string;
+  whatChanged: string;
+  nowPossible: string;
+  caution: string;
+  taskSuggestion: CommitTaskSuggestion | null;
+  featureSuggestion: CommitFeatureSuggestion | null;
+  focusImpact: string;
+  goalImpact: string;
+  reviewStatus: "pending" | "accepted" | "rejected";
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+export interface ReviewCommitAnalysisInput {
+  projectId: string;
+  commitHash: string;
+  action: "accept" | "reject";
+  taskId: string | null;
+  completeTask: boolean;
+  featureId: string | null;
+  featureStatus: FeatureStatus | null;
+}
+
 export interface GitBranch {
   name: string;
   shortHash: string;

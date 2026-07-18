@@ -2659,6 +2659,172 @@ h3 {
   border-radius: 5px;
 }
 
+.commit-analysis-launch {
+  padding: 9px 10px;
+  border-top: 1px solid rgba(36, 72, 101, 0.48);
+}
+
+.commit-analysis-launch > p {
+  display: grid;
+  gap: 6px;
+  color: #ffc4ce;
+  font-size: 0.56rem;
+  line-height: 1.45;
+}
+
+.commit-analysis-launch > p button {
+  width: fit-content;
+  padding: 0;
+  color: #9eeaf8;
+  font-size: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.commit-analysis {
+  margin: 0 9px 9px;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(27, 23, 61, 0.72), rgba(5, 17, 31, 0.9));
+  border: 1px solid rgba(141, 125, 255, 0.3);
+  border-radius: 8px;
+}
+
+.commit-analysis > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(141, 125, 255, 0.2);
+}
+
+.commit-analysis > header span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #c8c0ff;
+  font-size: 0.59rem;
+  font-weight: 700;
+}
+
+.commit-analysis > header small {
+  max-width: 150px;
+  overflow: hidden;
+  color: #716b98;
+  font-size: 0.48rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commit-analysis__summary {
+  display: grid;
+  gap: 1px;
+  background: rgba(86, 75, 149, 0.16);
+}
+
+.commit-analysis__summary > div {
+  padding: 8px 10px;
+  background: rgba(5, 14, 28, 0.86);
+}
+
+.commit-analysis__summary span,
+.commit-analysis__review label > span {
+  display: block;
+  margin-bottom: 3px;
+  color: #838fb2;
+  font-size: 0.49rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.commit-analysis__summary p {
+  margin: 0;
+  color: #c3d4e2;
+  font-size: 0.57rem;
+  line-height: 1.5;
+}
+
+.commit-analysis__summary .is-caution p {
+  color: #e8c99a;
+}
+
+.commit-analysis__review {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  border-top: 1px solid rgba(141, 125, 255, 0.2);
+}
+
+.commit-analysis__review > p {
+  margin: 0;
+  color: #8398ab;
+  font-size: 0.54rem;
+  line-height: 1.45;
+}
+
+.commit-analysis__review select {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  color: #c8d8e5;
+  font-size: 0.57rem;
+  background: #071425;
+  border: 1px solid #29475f;
+  border-radius: 6px;
+}
+
+.commit-analysis__review > small {
+  color: #777d9d;
+  font-size: 0.51rem;
+  line-height: 1.4;
+}
+
+.commit-analysis__check {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.commit-analysis__check > span {
+  margin: 0 !important;
+  color: #9fb5c7 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.commit-analysis__feature-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 7px;
+}
+
+.commit-analysis__actions {
+  display: flex;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.commit-analysis__reviewed {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 10px;
+  margin: 0;
+  color: #9fb0c0;
+  font-size: 0.56rem;
+  border-top: 1px solid rgba(141, 125, 255, 0.2);
+}
+
+.commit-analysis__reviewed.is-accepted {
+  color: var(--green);
+}
+
+.commit-analysis__reviewed.is-rejected {
+  color: #a895a1;
+}
+
 .commit-list p {
   display: flex;
   gap: 8px;

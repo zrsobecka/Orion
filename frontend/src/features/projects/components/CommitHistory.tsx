@@ -1,19 +1,58 @@
-import { AlertTriangle, ChevronDown, FileCode2, GitCommitHorizontal } from "lucide-react";
+import { AlertTriangle, ChevronDown, FileCode2, GitCommitHorizontal, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { formatRelativeTime } from "../projectModel";
-import type { GitCommit, GitCommitDetails } from "../types";
+import type {
+  CommitAnalysis,
+  GitCommit,
+  GitCommitDetails,
+  ProjectFeature,
+  ProjectTask,
+  ReviewCommitAnalysisInput,
+} from "../types";
+import { CommitAnalysisPanel } from "./CommitAnalysisPanel";
 
 interface CommitHistoryProps {
   projectId: string;
   commits: GitCommit[];
+  features: ProjectFeature[];
+  tasks: ProjectTask[];
   onLoadDetails: (projectId: string, hash: string) => Promise<GitCommitDetails>;
+  onAnalyzeCommit: (projectId: string, hash: string) => Promise<CommitAnalysis>;
+  onReviewCommitAnalysis: (input: ReviewCommitAnalysisInput) => Promise<void>;
 }
 
-export function CommitHistory({ projectId, commits, onLoadDetails }: CommitHistoryProps) {
+export function CommitHistory({
+  projectId,
+  commits,
+  features,
+  tasks,
+  onLoadDetails,
+  onAnalyzeCommit,
+  onReviewCommitAnalysis,
+}: CommitHistoryProps) {
   const [expandedHash, setExpandedHash] = useState<string | null>(null);
   const [detailsByHash, setDetailsByHash] = useState<Record<string, GitCommitDetails>>({});
   const [loadingHash, setLoadingHash] = useState<string | null>(null);
   const [errorByHash, setErrorByHash] = useState<Record<string, string>>({});
+  const [analysisByHash, setAnalysisByHash] = useState<Record<string, CommitAnalysis>>({});
+  const [analyzingHash, setAnalyzingHash] = useState<string | null>(null);
+  const [analysisErrorByHash, setAnalysisErrorByHash] = useState<Record<string, string>>({});
+
+  const analyze = async (commit: GitCommit) => {
+    setAnalyzingHash(commit.hash);
+    setAnalysisErrorByHash((current) => ({ ...current, [commit.hash]: "" }));
+    try {
+      const analysis = await onAnalyzeCommit(projectId, commit.hash);
+      setAnalysisByHash((current) => ({ ...current, [commit.hash]: analysis }));
+    } catch (caught) {
+      setAnalysisErrorByHash((current) => ({
+        ...current,
+        [commit.hash]: caught instanceof Error ? caught.message : String(caught),
+      }));
+    } finally {
+      setAnalyzingHash(null);
+    }
+  };
 
   const loadDetails = async (commit: GitCommit) => {
     if (detailsByHash[commit.hash] || loadingHash === commit.hash) return;
@@ -58,6 +97,8 @@ export function CommitHistory({ projectId, commits, onLoadDetails }: CommitHisto
             const expanded = expandedHash === commit.hash;
             const details = detailsByHash[commit.hash];
             const error = errorByHash[commit.hash];
+            const analysis = analysisByHash[commit.hash];
+            const analysisError = analysisErrorByHash[commit.hash];
             return (
               <article key={commit.hash} className={expanded ? "is-expanded" : ""}>
                 <span className="commit-list__node" />
@@ -120,6 +161,48 @@ export function CommitHistory({ projectId, commits, onLoadDetails }: CommitHisto
                             <small>Diff shortened to 60,000 characters.</small>
                           )}
                         </details>
+                        <div className="commit-analysis-launch">
+                          {!analysis && (
+                            <button
+                              className="button button--secondary button--small"
+                              disabled={analyzingHash === commit.hash}
+                              onClick={() => void analyze(commit)}
+                              type="button"
+                            >
+                              <Sparkles size={14} />
+                              {analyzingHash === commit.hash
+                                ? "Analyzing evidence…"
+                                : "Analyze impact"}
+                            </button>
+                          )}
+                          {analysisError && (
+                            <p role="alert">
+                              {analysisError}
+                              <button onClick={() => void analyze(commit)} type="button">
+                                Retry
+                              </button>
+                            </p>
+                          )}
+                        </div>
+                        {analysis && (
+                          <CommitAnalysisPanel
+                            analysis={analysis}
+                            features={features}
+                            projectId={projectId}
+                            tasks={tasks}
+                            onReview={async (input) => {
+                              await onReviewCommitAnalysis(input);
+                              setAnalysisByHash((current) => ({
+                                ...current,
+                                [commit.hash]: {
+                                  ...current[commit.hash],
+                                  reviewStatus: input.action === "accept" ? "accepted" : "rejected",
+                                  reviewedAt: new Date().toISOString(),
+                                },
+                              }));
+                            }}
+                          />
+                        )}
                       </>
                     )}
                   </div>

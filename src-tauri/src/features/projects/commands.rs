@@ -4,8 +4,9 @@ use tauri::State;
 
 use crate::{
     domain::{
-        AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, Project,
-        ProjectFeature, ProjectFocus, ProjectTask, StartProjectFocusInput, UpdateProjectInput,
+        AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, CommitAnalysis,
+        Project, ProjectFeature, ProjectFocus, ProjectTask, ReviewCommitAnalysisInput,
+        StartProjectFocusInput, UpdateProjectInput,
     },
     infrastructure::{
         integrations::git::{self, GitSnapshot},
@@ -13,7 +14,9 @@ use crate::{
     },
 };
 
-use super::{repository_analysis, Dashboard, FeatureAnalysisResult, ProjectSnapshot};
+use super::{
+    commit_analysis, repository_analysis, Dashboard, FeatureAnalysisResult, ProjectSnapshot,
+};
 
 use database::AppState;
 
@@ -49,6 +52,73 @@ pub async fn get_commit_details(
     tauri::async_runtime::spawn_blocking(move || git::read_commit_details(&path, &hash))
         .await
         .map_err(|error| format!("Commit inspection stopped unexpectedly: {error}"))?
+}
+
+#[tauri::command]
+pub async fn analyze_commit(
+    project_id: String,
+    hash: String,
+    state: State<'_, AppState>,
+) -> Result<CommitAnalysis, String> {
+    if !(7..=64).contains(&hash.len())
+        || !hash.chars().all(|character| character.is_ascii_hexdigit())
+    {
+        return Err("The commit hash is invalid.".to_string());
+    }
+    let (project, features, focuses, tasks, created_at) = {
+        let connection = state
+            .connection
+            .lock()
+            .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
+        if let Some(cached) = database::get_cached_commit_analysis(
+            &connection,
+            &project_id,
+            &hash,
+            commit_analysis::PROMPT_VERSION,
+        )? {
+            return Ok(cached);
+        }
+        (
+            database::get_project(&connection, &project_id)?,
+            database::list_features(&connection, &project_id)?,
+            database::list_project_focuses(&connection, &project_id)?,
+            database::list_project_tasks(&connection, &project_id)?,
+            database::current_timestamp(&connection)?,
+        )
+    };
+    let path = project.path.clone();
+    let analysis = tauri::async_runtime::spawn_blocking(move || {
+        commit_analysis::analyze(
+            &path, &project, &features, &focuses, &tasks, &hash, created_at,
+        )
+    })
+    .await
+    .map_err(|error| format!("Commit analysis stopped unexpectedly: {error}"))??;
+    let connection = state
+        .connection
+        .lock()
+        .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
+    database::save_commit_analysis(
+        &connection,
+        &project_id,
+        commit_analysis::PROMPT_VERSION,
+        &analysis,
+    )
+}
+
+#[tauri::command]
+pub fn review_commit_analysis(
+    input: ReviewCommitAnalysisInput,
+    state: State<'_, AppState>,
+) -> Result<ProjectSnapshot, String> {
+    let project_id = {
+        let mut connection = state
+            .connection
+            .lock()
+            .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
+        database::review_commit_analysis(&mut connection, &input, commit_analysis::PROMPT_VERSION)?
+    };
+    load_snapshot(&state, &project_id)
 }
 
 fn load_snapshot(state: &State<'_, AppState>, project_id: &str) -> Result<ProjectSnapshot, String> {

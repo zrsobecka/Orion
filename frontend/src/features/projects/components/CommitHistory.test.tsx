@@ -35,7 +35,15 @@ describe("CommitHistory", () => {
     const user = userEvent.setup();
     const onLoadDetails = vi.fn().mockResolvedValue(details);
     render(
-      <CommitHistory projectId="project-1" commits={[commit]} onLoadDetails={onLoadDetails} />,
+      <CommitHistory
+        projectId="project-1"
+        commits={[commit]}
+        features={[]}
+        tasks={[]}
+        onAnalyzeCommit={vi.fn()}
+        onLoadDetails={onLoadDetails}
+        onReviewCommitAnalysis={vi.fn()}
+      />,
     );
 
     expect(screen.getByText("2 files")).toBeInTheDocument();

@@ -22,6 +22,7 @@ import type {
   AcceptFeatureSuggestionsInput,
   AddFeatureInput,
   AddProjectTaskInput,
+  CommitAnalysis,
   FeatureAnalysisResult,
   FeaturePriority,
   FeatureSuggestion,
@@ -29,6 +30,7 @@ import type {
   GitCommitDetails,
   ProjectSnapshot,
   ProjectStatus,
+  ReviewCommitAnalysisInput,
   StartProjectFocusInput,
   UpdateProjectInput,
 } from "../types";
@@ -42,6 +44,8 @@ interface ProjectCockpitProps {
   onBack: () => void;
   onRefresh: () => void;
   onGetCommitDetails: (projectId: string, hash: string) => Promise<GitCommitDetails>;
+  onAnalyzeCommit: (projectId: string, hash: string) => Promise<CommitAnalysis>;
+  onReviewCommitAnalysis: (input: ReviewCommitAnalysisInput) => Promise<void>;
   onUpdateProject: (input: UpdateProjectInput) => Promise<void>;
   onAddFeature: (input: AddFeatureInput) => Promise<void>;
   onAnalyzeFeatures: (projectId: string) => Promise<FeatureAnalysisResult>;
@@ -61,6 +65,8 @@ export function ProjectCockpit({
   onBack,
   onRefresh,
   onGetCommitDetails,
+  onAnalyzeCommit,
+  onReviewCommitAnalysis,
   onUpdateProject,
   onAddFeature,
   onAnalyzeFeatures,
@@ -268,6 +274,8 @@ export function ProjectCockpit({
             snapshot={snapshot}
             onRefresh={onRefresh}
             onGetCommitDetails={onGetCommitDetails}
+            onAnalyzeCommit={onAnalyzeCommit}
+            onReviewCommitAnalysis={onReviewCommitAnalysis}
           />
         </aside>
       </div>
@@ -467,10 +475,14 @@ function GitTelemetry({
   snapshot,
   onRefresh,
   onGetCommitDetails,
+  onAnalyzeCommit,
+  onReviewCommitAnalysis,
 }: {
   snapshot: ProjectSnapshot;
   onRefresh: () => void;
   onGetCommitDetails: (projectId: string, hash: string) => Promise<GitCommitDetails>;
+  onAnalyzeCommit: (projectId: string, hash: string) => Promise<CommitAnalysis>;
+  onReviewCommitAnalysis: (input: ReviewCommitAnalysisInput) => Promise<void>;
 }) {
   const { git } = snapshot;
   if (!git.available) {
@@ -533,8 +545,12 @@ function GitTelemetry({
 
       <CommitHistory
         commits={git.commits.slice(0, 5)}
+        features={snapshot.features}
         projectId={snapshot.project.id}
+        tasks={snapshot.tasks}
+        onAnalyzeCommit={onAnalyzeCommit}
         onLoadDetails={onGetCommitDetails}
+        onReviewCommitAnalysis={onReviewCommitAnalysis}
       />
     </>
   );

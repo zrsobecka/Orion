@@ -4,8 +4,9 @@ use rusqlite::{params, Connection, OptionalExtension, Row};
 use tauri::{AppHandle, Manager};
 
 use crate::domain::{
-    AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, Project, ProjectFeature,
-    ProjectFocus, ProjectTask, StartProjectFocusInput, UpdateProjectInput,
+    AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, CommitAnalysis, Project,
+    ProjectFeature, ProjectFocus, ProjectTask, ReviewCommitAnalysisInput, StartProjectFocusInput,
+    UpdateProjectInput,
 };
 
 pub struct AppState {
@@ -245,10 +246,39 @@ fn migrate(connection: &Connection) -> Result<(), String> {
                 "#,
             )
             .map_err(|error| format!("Could not add project focuses: {error}"))?;
-    } else if version > 4 {
+    } else if version > 5 {
         return Err(format!(
             "This Orion database was created by a newer app version ({version})."
         ));
+    }
+
+    let version = connection
+        .query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0))
+        .map_err(|error| format!("Could not confirm the Orion database version: {error}"))?;
+    if version == 4 {
+        connection
+            .execute_batch(
+                r#"
+                BEGIN;
+                CREATE TABLE commit_analyses (
+                    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                    commit_hash TEXT NOT NULL,
+                    prompt_version TEXT NOT NULL,
+                    model TEXT NOT NULL,
+                    analysis_json TEXT NOT NULL,
+                    review_status TEXT NOT NULL DEFAULT 'pending'
+                        CHECK(review_status IN ('pending', 'accepted', 'rejected')),
+                    created_at TEXT NOT NULL,
+                    reviewed_at TEXT,
+                    PRIMARY KEY(project_id, commit_hash, prompt_version)
+                );
+                CREATE INDEX idx_commit_analyses_project_status
+                    ON commit_analyses(project_id, review_status, created_at DESC);
+                PRAGMA user_version = 5;
+                COMMIT;
+                "#,
+            )
+            .map_err(|error| format!("Could not add cached commit analyses: {error}"))?;
     }
     Ok(())
 }
@@ -721,6 +751,180 @@ pub fn remove_project_task(connection: &Connection, task_id: &str) -> Result<Str
     Ok(project_id)
 }
 
+pub fn get_cached_commit_analysis(
+    connection: &Connection,
+    project_id: &str,
+    commit_hash: &str,
+    prompt_version: &str,
+) -> Result<Option<CommitAnalysis>, String> {
+    connection
+        .query_row(
+            "SELECT analysis_json, model, review_status, created_at, reviewed_at
+             FROM commit_analyses
+             WHERE project_id = ?1 AND commit_hash = ?2 AND prompt_version = ?3",
+            params![project_id, commit_hash, prompt_version],
+            |row| {
+                let json: String = row.get(0)?;
+                let mut analysis =
+                    serde_json::from_str::<CommitAnalysis>(&json).map_err(|error| {
+                        rusqlite::Error::FromSqlConversionFailure(
+                            json.len(),
+                            rusqlite::types::Type::Text,
+                            Box::new(error),
+                        )
+                    })?;
+                analysis.model = row.get(1)?;
+                analysis.review_status = row.get(2)?;
+                analysis.created_at = row.get(3)?;
+                analysis.reviewed_at = row.get(4)?;
+                Ok(analysis)
+            },
+        )
+        .optional()
+        .map_err(|error| format!("Could not read the cached commit analysis: {error}"))
+}
+
+pub fn save_commit_analysis(
+    connection: &Connection,
+    project_id: &str,
+    prompt_version: &str,
+    analysis: &CommitAnalysis,
+) -> Result<CommitAnalysis, String> {
+    let json = serde_json::to_string(analysis)
+        .map_err(|error| format!("Could not encode the commit analysis: {error}"))?;
+    connection
+        .execute(
+            "INSERT OR IGNORE INTO commit_analyses
+             (project_id, commit_hash, prompt_version, model, analysis_json, review_status,
+              created_at, reviewed_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![
+                project_id,
+                analysis.commit_hash,
+                prompt_version,
+                analysis.model,
+                json,
+                analysis.review_status,
+                analysis.created_at,
+                analysis.reviewed_at,
+            ],
+        )
+        .map_err(|error| format!("Could not cache the commit analysis: {error}"))?;
+    get_cached_commit_analysis(
+        connection,
+        project_id,
+        &analysis.commit_hash,
+        prompt_version,
+    )?
+    .ok_or_else(|| "The commit analysis cache could not be read after saving.".to_string())
+}
+
+pub fn review_commit_analysis(
+    connection: &mut Connection,
+    input: &ReviewCommitAnalysisInput,
+    prompt_version: &str,
+) -> Result<String, String> {
+    if !matches!(input.action.as_str(), "accept" | "reject") {
+        return Err("Unknown commit-analysis review action.".to_string());
+    }
+    get_project(connection, &input.project_id)?;
+    let transaction = connection
+        .transaction()
+        .map_err(|error| format!("Could not start the analysis review: {error}"))?;
+    let current_status = transaction
+        .query_row(
+            "SELECT review_status FROM commit_analyses
+             WHERE project_id = ?1 AND commit_hash = ?2 AND prompt_version = ?3",
+            params![input.project_id, input.commit_hash, prompt_version],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|error| format!("Could not locate the commit analysis: {error}"))?
+        .ok_or_else(|| "Analyze this commit before reviewing its proposals.".to_string())?;
+    let target_status = if input.action == "accept" {
+        "accepted"
+    } else {
+        "rejected"
+    };
+    if current_status == target_status {
+        return Ok(input.project_id.clone());
+    }
+    if current_status != "pending" {
+        return Err("This commit analysis was already reviewed.".to_string());
+    }
+
+    let timestamp = now(&transaction)?;
+    if input.action == "accept" {
+        if input.complete_task {
+            let task_id = input
+                .task_id
+                .as_deref()
+                .ok_or_else(|| "Choose a task before marking it complete.".to_string())?;
+            let task_project = transaction
+                .query_row(
+                    "SELECT project_id FROM project_tasks WHERE id = ?1",
+                    [task_id],
+                    |row| row.get::<_, String>(0),
+                )
+                .optional()
+                .map_err(|error| format!("Could not validate the proposed task: {error}"))?
+                .ok_or_else(|| "The proposed task is no longer available.".to_string())?;
+            if task_project != input.project_id {
+                return Err("The proposed task belongs to another project.".to_string());
+            }
+            transaction
+                .execute(
+                    "UPDATE project_tasks SET completed = 1, updated_at = ?2 WHERE id = ?1",
+                    params![task_id, timestamp],
+                )
+                .map_err(|error| format!("Could not complete the approved task: {error}"))?;
+        }
+        if let Some(feature_id) = input.feature_id.as_deref() {
+            let status = input
+                .feature_status
+                .as_deref()
+                .ok_or_else(|| "Choose a feature status before applying it.".to_string())?;
+            validate_feature_status(status)?;
+            let feature_project = transaction
+                .query_row(
+                    "SELECT project_id FROM features WHERE id = ?1",
+                    [feature_id],
+                    |row| row.get::<_, String>(0),
+                )
+                .optional()
+                .map_err(|error| format!("Could not validate the proposed feature: {error}"))?
+                .ok_or_else(|| "The proposed feature is no longer available.".to_string())?;
+            if feature_project != input.project_id {
+                return Err("The proposed feature belongs to another project.".to_string());
+            }
+            transaction
+                .execute(
+                    "UPDATE features SET status = ?2, updated_at = ?3 WHERE id = ?1",
+                    params![feature_id, status, timestamp],
+                )
+                .map_err(|error| format!("Could not apply the approved feature status: {error}"))?;
+        }
+    }
+    transaction
+        .execute(
+            "UPDATE commit_analyses
+             SET review_status = ?4, reviewed_at = ?5
+             WHERE project_id = ?1 AND commit_hash = ?2 AND prompt_version = ?3",
+            params![
+                input.project_id,
+                input.commit_hash,
+                prompt_version,
+                target_status,
+                timestamp
+            ],
+        )
+        .map_err(|error| format!("Could not record the analysis review: {error}"))?;
+    transaction
+        .commit()
+        .map_err(|error| format!("Could not save the approved progress updates: {error}"))?;
+    Ok(input.project_id.clone())
+}
+
 fn validate_project_status(status: &str) -> Result<(), String> {
     match status {
         "planning" | "active" | "paused" | "shipped" => Ok(()),
@@ -1031,5 +1235,89 @@ mod tests {
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, "Keep this task");
         assert_eq!(tasks[0].focus_id.as_deref(), Some(focuses[0].id.as_str()));
+    }
+
+    #[test]
+    fn approved_commit_analysis_applies_only_reviewed_task_and_feature_updates() {
+        let mut connection = test_connection();
+        let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        start_focus(&mut connection, &project.id, "Close the evidence loop");
+        add_feature(
+            &connection,
+            &AddFeatureInput {
+                project_id: project.id.clone(),
+                name: "Commit evidence".to_string(),
+                description: String::new(),
+                status: "in_progress".to_string(),
+                priority: "now".to_string(),
+                evidence: String::new(),
+            },
+        )
+        .expect("feature");
+        let feature = list_features(&connection, &project.id)
+            .expect("features")
+            .remove(0);
+        add_project_task(
+            &connection,
+            &AddProjectTaskInput {
+                project_id: project.id.clone(),
+                feature_id: Some(feature.id.clone()),
+                title: "Show real commit files".to_string(),
+            },
+        )
+        .expect("task");
+        let task = list_project_tasks(&connection, &project.id)
+            .expect("tasks")
+            .remove(0);
+        let analysis = CommitAnalysis {
+            commit_hash: "abcdef1234567890".to_string(),
+            model: "local-model".to_string(),
+            what_changed: "Commit details are visible.".to_string(),
+            now_possible: "Inspect evidence in Orion.".to_string(),
+            caution: String::new(),
+            task_suggestion: None,
+            feature_suggestion: None,
+            focus_impact: "One focus task may be complete.".to_string(),
+            goal_impact: "Health evidence improved.".to_string(),
+            review_status: "pending".to_string(),
+            created_at: current_timestamp(&connection).expect("timestamp"),
+            reviewed_at: None,
+        };
+        save_commit_analysis(&connection, &project.id, "test-v1", &analysis)
+            .expect("cached analysis");
+        let mut duplicate = analysis.clone();
+        duplicate.what_changed = "A duplicate model response.".to_string();
+        assert_eq!(
+            save_commit_analysis(&connection, &project.id, "test-v1", &duplicate)
+                .expect("deduplicated analysis")
+                .what_changed,
+            analysis.what_changed
+        );
+
+        let review = ReviewCommitAnalysisInput {
+            project_id: project.id.clone(),
+            commit_hash: analysis.commit_hash.clone(),
+            action: "accept".to_string(),
+            task_id: Some(task.id),
+            complete_task: true,
+            feature_id: Some(feature.id),
+            feature_status: Some("working".to_string()),
+        };
+        review_commit_analysis(&mut connection, &review, "test-v1").expect("approved review");
+        review_commit_analysis(&mut connection, &review, "test-v1")
+            .expect("idempotent approved review");
+
+        assert!(list_project_tasks(&connection, &project.id).expect("tasks")[0].completed);
+        assert_eq!(
+            list_features(&connection, &project.id).expect("features")[0].status,
+            "working"
+        );
+        assert_eq!(
+            get_cached_commit_analysis(&connection, &project.id, &analysis.commit_hash, "test-v1")
+                .expect("cache")
+                .expect("analysis")
+                .review_status,
+            "accepted"
+        );
     }
 }

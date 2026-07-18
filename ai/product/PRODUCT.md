@@ -36,6 +36,7 @@ Success means a builder can resume work on any application without opening sever
 - Git telemetry: current branch, local branches, recent commits, commit file/line evidence, changed-file count, and upstream divergence.
 - Manual refresh and actionable repository errors.
 - Evidence-backed repository feature proposals through local LM Studio, accepted explicitly by the builder.
+- Cached commit-impact explanations and editable task/feature updates, applied only after explicit review.
 
 ## Explicit non-goals for MVP
 
@@ -43,7 +44,7 @@ Success means a builder can resume work on any application without opening sever
 - Automatic code changes or autonomous agents.
 - Full project-management suite with sprints, estimates, and team assignment.
 - AI asserting that a feature works without repository evidence or user confirmation.
-- Automatic task recommendations or autonomous prioritization.
+- Autonomous task creation or prioritization.
 - Cloud sync or collaboration.
 
 ## Strong next stages

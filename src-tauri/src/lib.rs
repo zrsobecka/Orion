@@ -18,6 +18,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             features::projects::get_dashboard,
             features::projects::get_commit_details,
+            features::projects::analyze_commit,
+            features::projects::review_commit_analysis,
             features::projects::add_project,
             features::projects::update_project,
             features::projects::remove_project,

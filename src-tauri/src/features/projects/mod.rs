@@ -1,4 +1,5 @@
 mod commands;
+mod commit_analysis;
 mod models;
 mod repository_analysis;
 
