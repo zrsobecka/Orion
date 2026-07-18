@@ -7,6 +7,7 @@ Each registered application has one small manual list where the user records wha
 ## Behavior
 
 - A task belongs to exactly one registered project.
+- A task can optionally point to one feature from that same project. General work can remain unlinked.
 - The user can add a task with a title of 1–200 characters.
 - A task can be completed or reopened.
 - A task can be removed.
@@ -18,8 +19,8 @@ Each registered application has one small manual list where the user records wha
 - Due dates, estimates, tags, priorities, subtasks, or assignees.
 - AI recommendations or automatic status changes.
 - Synchronization with external task managers.
-- Task-driven project progress percentages.
+- Treating task completion as the project's overall progress.
 
 ## Visual behavior
 
-The project cockpit shows open-task count as one node in the mission orbit and keeps direct task entry beside the visual map. Motion provides orientation and atmosphere, while `prefers-reduced-motion` removes continuous animation for users who request it.
+The project cockpit shows open-task count as one node in the mission orbit and keeps direct task entry beside the visual map. The composer offers an optional feature relationship and each linked task shows the feature name. Motion provides orientation and atmosphere, while `prefers-reduced-motion` removes continuous animation for users who request it.

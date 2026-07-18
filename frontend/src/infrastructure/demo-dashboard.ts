@@ -53,6 +53,7 @@ export const demoDashboard: Dashboard = {
         {
           id: "t-map",
           projectId: "orion-demo",
+          featureId: "f-overview",
           title: "Turn the project cockpit into a visual mission map",
           completed: false,
           createdAt: "2026-07-13T13:25:00Z",
@@ -61,6 +62,7 @@ export const demoDashboard: Dashboard = {
         {
           id: "t-native",
           projectId: "orion-demo",
+          featureId: "f-git",
           title: "Verify the exact packaged Orion.exe",
           completed: false,
           createdAt: "2026-07-13T13:18:00Z",
@@ -69,6 +71,7 @@ export const demoDashboard: Dashboard = {
         {
           id: "t-import",
           projectId: "orion-demo",
+          featureId: "f-overview",
           title: "Connect the native repository picker",
           completed: true,
           createdAt: "2026-07-13T11:00:00Z",
@@ -162,6 +165,7 @@ export const demoDashboard: Dashboard = {
         {
           id: "m-task-model",
           projectId: "menma-demo",
+          featureId: "m-model",
           title: "Connect the story room to the selected local model",
           completed: false,
           createdAt: "2026-07-12T19:05:00Z",

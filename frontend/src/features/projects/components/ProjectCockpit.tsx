@@ -148,6 +148,7 @@ export function ProjectCockpit({
           workingFeatureCount={counts.working}
         />
         <ProjectTasks
+          features={snapshot.features}
           projectId={snapshot.project.id}
           tasks={snapshot.tasks}
           onAdd={onAddProjectTask}

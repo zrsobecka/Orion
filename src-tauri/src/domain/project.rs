@@ -32,6 +32,7 @@ pub struct ProjectFeature {
 pub struct ProjectTask {
     pub id: String,
     pub project_id: String,
+    pub feature_id: Option<String>,
     pub title: String,
     pub completed: bool,
     pub created_at: String,
@@ -62,6 +63,7 @@ pub struct AddFeatureInput {
 #[serde(rename_all = "camelCase")]
 pub struct AddProjectTaskInput {
     pub project_id: String,
+    pub feature_id: Option<String>,
     pub title: String,
 }
 

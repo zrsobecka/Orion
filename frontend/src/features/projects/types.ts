@@ -28,6 +28,7 @@ export interface ProjectFeature {
 export interface ProjectTask {
   id: string;
   projectId: string;
+  featureId: string | null;
   title: string;
   completed: boolean;
   createdAt: string;
@@ -92,6 +93,7 @@ export interface AddFeatureInput {
 
 export interface AddProjectTaskInput {
   projectId: string;
+  featureId: string | null;
   title: string;
 }
 

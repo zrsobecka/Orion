@@ -1638,14 +1638,15 @@ h3 {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 0.55fr) auto;
   gap: 8px;
   padding: 13px;
   background: rgba(5, 13, 27, 0.7);
   border-bottom: 1px solid rgba(31, 69, 101, 0.5);
 }
 
-.task-composer input {
+.task-composer input,
+.task-composer select {
   min-width: 0;
   height: 38px;
   padding: 0 11px;
@@ -1659,13 +1660,24 @@ h3 {
 }
 
 .task-composer input:hover,
-.task-composer input:focus {
+.task-composer input:focus,
+.task-composer select:hover,
+.task-composer select:focus {
   border-color: rgba(24, 213, 245, 0.68);
   box-shadow: 0 0 18px rgba(24, 213, 245, 0.08);
 }
 
 .task-composer input::placeholder {
   color: #526c84;
+}
+
+.task-composer__feature,
+.task-composer__feature select {
+  min-width: 0;
+}
+
+.task-composer__feature select {
+  width: 100%;
 }
 
 .task-composer__submit {
@@ -1726,6 +1738,19 @@ h3 {
 .task-item.is-completed > span {
   color: #658096;
   text-decoration: line-through;
+}
+
+.task-item__content {
+  display: grid;
+  gap: 2px;
+}
+
+.task-item__content small {
+  overflow: hidden;
+  color: #7293aa;
+  font-size: 0.57rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .task-item__toggle,

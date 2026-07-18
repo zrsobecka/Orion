@@ -1,9 +1,10 @@
 import { Check, Circle, Plus, Trash2, Zap } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
-import type { AddProjectTaskInput, ProjectTask } from "../types";
+import type { AddProjectTaskInput, ProjectFeature, ProjectTask } from "../types";
 
 interface ProjectTasksProps {
   projectId: string;
+  features: ProjectFeature[];
   tasks: ProjectTask[];
   onAdd: (input: AddProjectTaskInput) => Promise<void>;
   onSetCompleted: (taskId: string, completed: boolean) => Promise<void>;
@@ -12,6 +13,7 @@ interface ProjectTasksProps {
 
 export function ProjectTasks({
   projectId,
+  features,
   tasks,
   onAdd,
   onSetCompleted,
@@ -33,7 +35,8 @@ export function ProjectTasks({
     setAdding(true);
     setError(null);
     try {
-      await onAdd({ projectId, title });
+      const featureId = String(data.get("featureId") || "").trim() || null;
+      await onAdd({ projectId, featureId, title });
       form.reset();
       inputRef.current?.focus();
     } catch (caught) {
@@ -81,6 +84,17 @@ export function ProjectTasks({
           placeholder="Add something you want to do…"
           required
         />
+        <label className="task-composer__feature">
+          <span className="sr-only">Related feature</span>
+          <select aria-label="Related feature" defaultValue="" name="featureId">
+            <option value="">No feature link</option>
+            {features.map((feature) => (
+              <option key={feature.id} value={feature.id}>
+                {feature.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <button className="button button--primary task-composer__submit" disabled={adding}>
           <Plus size={16} />
           {adding ? "Adding…" : "Add"}
@@ -122,7 +136,15 @@ export function ProjectTasks({
                 >
                   {task.completed ? <Check size={15} /> : <Circle size={15} />}
                 </button>
-                <span>{task.title}</span>
+                <span className="task-item__content">
+                  <span>{task.title}</span>
+                  {task.featureId && (
+                    <small>
+                      {features.find((feature) => feature.id === task.featureId)?.name ??
+                        "Linked feature"}
+                    </small>
+                  )}
+                </span>
                 <button
                   aria-label={`Remove ${task.title}`}
                   className="task-item__remove"

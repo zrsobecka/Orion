@@ -85,6 +85,7 @@ fn migrate(connection: &Connection) -> Result<(), String> {
             CREATE TABLE IF NOT EXISTS project_tasks (
                 id TEXT PRIMARY KEY NOT NULL,
                 project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                feature_id TEXT REFERENCES features(id) ON DELETE SET NULL,
                 title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
                 completed INTEGER NOT NULL DEFAULT 0 CHECK(completed IN (0, 1)),
                 created_at TEXT NOT NULL,
@@ -93,8 +94,10 @@ fn migrate(connection: &Connection) -> Result<(), String> {
 
             CREATE INDEX IF NOT EXISTS idx_project_tasks_project_status
                 ON project_tasks(project_id, completed, created_at);
+            CREATE INDEX IF NOT EXISTS idx_project_tasks_feature
+                ON project_tasks(feature_id, completed, created_at);
 
-            PRAGMA user_version = 2;
+            PRAGMA user_version = 3;
             COMMIT;
             "#,
             )
@@ -114,12 +117,30 @@ fn migrate(connection: &Connection) -> Result<(), String> {
                 );
                 CREATE INDEX idx_project_tasks_project_status
                     ON project_tasks(project_id, completed, created_at);
-                PRAGMA user_version = 2;
+                ALTER TABLE project_tasks ADD COLUMN feature_id TEXT
+                    REFERENCES features(id) ON DELETE SET NULL;
+                CREATE INDEX idx_project_tasks_feature
+                    ON project_tasks(feature_id, completed, created_at);
+                PRAGMA user_version = 3;
                 COMMIT;
                 "#,
             )
             .map_err(|error| format!("Could not upgrade the Orion database: {error}"))?;
-    } else if version > 2 {
+    } else if version == 2 {
+        connection
+            .execute_batch(
+                r#"
+                BEGIN;
+                ALTER TABLE project_tasks ADD COLUMN feature_id TEXT
+                    REFERENCES features(id) ON DELETE SET NULL;
+                CREATE INDEX idx_project_tasks_feature
+                    ON project_tasks(feature_id, completed, created_at);
+                PRAGMA user_version = 3;
+                COMMIT;
+                "#,
+            )
+            .map_err(|error| format!("Could not add task-feature links: {error}"))?;
+    } else if version > 3 {
         return Err(format!(
             "This Orion database was created by a newer app version ({version})."
         ));
@@ -180,17 +201,19 @@ fn row_to_task(row: &Row<'_>) -> rusqlite::Result<ProjectTask> {
     Ok(ProjectTask {
         id: row.get(0)?,
         project_id: row.get(1)?,
-        title: row.get(2)?,
-        completed: row.get(3)?,
-        created_at: row.get(4)?,
-        updated_at: row.get(5)?,
+        feature_id: row.get(2)?,
+        title: row.get(3)?,
+        completed: row.get(4)?,
+        created_at: row.get(5)?,
+        updated_at: row.get(6)?,
     })
 }
 
 const PROJECT_COLUMNS: &str = "id, name, path, goal, next_action, status, created_at, updated_at";
 const FEATURE_COLUMNS: &str =
     "id, project_id, name, description, status, priority, evidence, created_at, updated_at";
-const TASK_COLUMNS: &str = "id, project_id, title, completed, created_at, updated_at";
+const TASK_COLUMNS: &str =
+    "id, project_id, feature_id, title, completed, created_at, updated_at";
 
 pub fn list_projects(connection: &Connection) -> Result<Vec<Project>, String> {
     let mut statement = connection
@@ -441,15 +464,29 @@ pub fn add_project_task(
         return Err("Task title must contain between 1 and 200 characters.".to_string());
     }
     get_project(connection, &input.project_id)?;
+    if let Some(feature_id) = input.feature_id.as_deref() {
+        let feature_project_id = connection
+            .query_row(
+                "SELECT project_id FROM features WHERE id = ?1",
+                [feature_id],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .map_err(|error| format!("Could not check the linked feature: {error}"))?
+            .ok_or_else(|| "The linked feature is no longer available.".to_string())?;
+        if feature_project_id != input.project_id {
+            return Err("A task can only link to a feature in the same project.".to_string());
+        }
+    }
 
     let id = new_id(connection, "task")?;
     let timestamp = now(connection)?;
     connection
         .execute(
             "INSERT INTO project_tasks
-             (id, project_id, title, completed, created_at, updated_at)
-             VALUES (?1, ?2, ?3, 0, ?4, ?4)",
-            params![id, input.project_id, title, timestamp],
+            (id, project_id, feature_id, title, completed, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, 0, ?5, ?5)",
+            params![id, input.project_id, input.feature_id, title, timestamp],
         )
         .map_err(|error| format!("Could not add the project task: {error}"))?;
     Ok(input.project_id.clone())
@@ -613,11 +650,13 @@ mod tests {
         let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
         let first = AddProjectTaskInput {
             project_id: project.id.clone(),
+            feature_id: None,
             title: "Map the cockpit".to_string(),
         };
         add_project_task(&connection, &first).expect("first task");
         let second = AddProjectTaskInput {
             project_id: project.id.clone(),
+            feature_id: None,
             title: "Verify the executable".to_string(),
         };
         add_project_task(&connection, &second).expect("second task");
@@ -633,6 +672,56 @@ mod tests {
     }
 
     #[test]
+    fn project_tasks_can_link_only_to_features_from_the_same_project() {
+        let connection = test_connection();
+        let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        let other = add_project(&connection, "Other", "C:\\Apps\\Other").expect("other project");
+        add_feature(
+            &connection,
+            &AddFeatureInput {
+                project_id: project.id.clone(),
+                name: "Project cockpit".to_string(),
+                description: String::new(),
+                status: "in_progress".to_string(),
+                priority: "now".to_string(),
+                evidence: String::new(),
+            },
+        )
+        .expect("feature");
+        let feature = list_features(&connection, &project.id)
+            .expect("features")
+            .remove(0);
+
+        add_project_task(
+            &connection,
+            &AddProjectTaskInput {
+                project_id: project.id.clone(),
+                feature_id: Some(feature.id.clone()),
+                title: "Polish the cockpit".to_string(),
+            },
+        )
+        .expect("linked task");
+        let task = list_project_tasks(&connection, &project.id)
+            .expect("tasks")
+            .remove(0);
+        assert_eq!(task.feature_id, Some(feature.id.clone()));
+
+        let error = add_project_task(
+            &connection,
+            &AddProjectTaskInput {
+                project_id: other.id,
+                feature_id: Some(feature.id),
+                title: "Invalid cross-project link".to_string(),
+            },
+        )
+        .expect_err("cross-project link");
+        assert_eq!(
+            error,
+            "A task can only link to a feature in the same project."
+        );
+    }
+
+    #[test]
     fn removing_a_project_removes_its_tasks() {
         let connection = test_connection();
         let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
@@ -640,6 +729,7 @@ mod tests {
             &connection,
             &AddProjectTaskInput {
                 project_id: project.id.clone(),
+                feature_id: None,
                 title: "Keep this local".to_string(),
             },
         )

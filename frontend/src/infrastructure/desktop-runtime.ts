@@ -139,6 +139,7 @@ export const desktopRuntime = {
     snapshot.tasks.unshift({
       id: crypto.randomUUID(),
       projectId: input.projectId,
+      featureId: input.featureId,
       title: input.title.trim(),
       completed: false,
       createdAt: now,
