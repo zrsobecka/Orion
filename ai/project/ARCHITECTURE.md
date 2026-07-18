@@ -11,6 +11,7 @@ React view
       -> narrow Tauri command
         -> project database service -> SQLite in the OS app-data directory
         -> Git service -> git executable with argument arrays (never a shell string)
+        -> LM Studio service -> local structured chat API
 ```
 
 ## Ownership boundaries
@@ -22,6 +23,10 @@ See [CODEBASE.md](CODEBASE.md) for path ownership. Cross-boundary rules are stri
 - `projects`: unique local repository path, goal, next action, and lifecycle status.
 - `features`: a project-owned capability, priority horizon, working status, and evidence note.
 - `project_tasks`: a project-owned manual task with a durable completion state.
+
+LM Studio is a replaceable local inference boundary, not a source of truth. Each consuming feature
+owns its prompt, context policy, output schema, and acceptance rules. AI proposals become durable
+only after explicit user confirmation and validated SQLite writes.
 
 Foreign keys and check constraints protect valid relationships and status values. Schema upgrades use `PRAGMA user_version` migrations.
 

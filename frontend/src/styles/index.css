@@ -45,6 +45,197 @@
   --sidebar-width: 244px;
 }
 
+.panel__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.analysis-modal {
+  display: grid;
+  gap: 18px;
+  min-width: min(680px, 76vw);
+}
+
+.analysis-state {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  padding: 36px 24px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.analysis-state h3,
+.analysis-state p {
+  margin: 0;
+}
+
+.analysis-state h3 {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.analysis-state p {
+  max-width: 520px;
+  line-height: 1.55;
+}
+
+.analysis-state--error svg {
+  color: var(--red);
+}
+
+.analysis-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--cyan) 22%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cyan) 5%, transparent);
+}
+
+.analysis-summary div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cyan);
+}
+
+.analysis-summary p {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 10px;
+  max-height: min(460px, 52vh);
+  overflow-y: auto;
+  padding-right: 3px;
+}
+
+.suggestion-card {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.suggestion-card:hover {
+  border-color: color-mix(in srgb, var(--cyan) 36%, var(--border));
+}
+
+.suggestion-card--selected {
+  border-color: color-mix(in srgb, var(--cyan) 52%, var(--border));
+  background: color-mix(in srgb, var(--cyan) 6%, var(--panel));
+}
+
+.suggestion-card > input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.suggestion-card__check {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  margin-top: 1px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  color: var(--page);
+  background: transparent;
+}
+
+.suggestion-card--selected .suggestion-card__check {
+  border-color: var(--cyan);
+  background: var(--cyan);
+}
+
+.suggestion-card:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--cyan) 62%, transparent);
+  outline-offset: 2px;
+}
+
+.suggestion-card__body {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.suggestion-card__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  color: var(--text);
+}
+
+.suggestion-card__heading > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.suggestion-card__heading > small {
+  margin-left: auto;
+  color: var(--text-subtle);
+  white-space: nowrap;
+}
+
+.suggestion-card__evidence {
+  overflow-wrap: anywhere;
+  color: var(--text-subtle);
+}
+
+.suggestion-card__evidence strong {
+  margin-right: 5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.66rem;
+}
+
+@media (max-width: 760px) {
+  .analysis-modal {
+    min-width: 0;
+  }
+
+  .analysis-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .analysis-summary p {
+    text-align: left;
+  }
+
+  .suggestion-card__heading > small {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -2110,6 +2301,9 @@ h3 {
 }
 
 .modal {
+  display: flex;
+  max-height: calc(100dvh - 48px);
+  flex-direction: column;
   width: min(100%, 570px);
   overflow: hidden;
   background: #0a1525;
@@ -2123,7 +2317,17 @@ h3 {
   max-width: 450px;
 }
 
+.modal--large {
+  max-width: 720px;
+}
+
+.modal > :not(.modal__header) {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .modal__header {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;

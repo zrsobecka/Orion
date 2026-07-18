@@ -21,6 +21,8 @@ pub fn run() {
             features::projects::update_project,
             features::projects::remove_project,
             features::projects::add_feature,
+            features::projects::analyze_project_features,
+            features::projects::accept_feature_suggestions,
             features::projects::update_feature_status,
             features::projects::add_project_task,
             features::projects::set_project_task_completed,

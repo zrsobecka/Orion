@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { desktopRuntime } from "../../../infrastructure/desktop-runtime";
 import type {
+  AcceptFeatureSuggestionsInput,
   AddFeatureInput,
   AddProjectTaskInput,
+  FeatureAnalysisResult,
   FeatureStatus,
   ProjectSnapshot,
   UpdateProjectInput,
@@ -110,6 +112,25 @@ export function useProjects() {
     [replaceSnapshot],
   );
 
+  const analyzeProjectFeatures = useCallback(
+    (projectId: string): Promise<FeatureAnalysisResult> =>
+      desktopRuntime.analyzeProjectFeatures(projectId),
+    [],
+  );
+
+  const acceptFeatureSuggestions = useCallback(
+    async (input: AcceptFeatureSuggestionsInput) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.acceptFeatureSuggestions(input));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
   const updateFeatureStatus = useCallback(
     async (featureId: string, status: FeatureStatus) => {
       setError(null);
@@ -195,6 +216,8 @@ export function useProjects() {
     addProject,
     updateProject,
     addFeature,
+    analyzeProjectFeatures,
+    acceptFeatureSuggestions,
     updateFeatureStatus,
     addProjectTask,
     setProjectTaskCompleted,

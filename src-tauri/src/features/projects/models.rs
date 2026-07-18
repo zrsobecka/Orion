@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::{
-    domain::{Project, ProjectFeature, ProjectTask},
+    domain::{FeatureSuggestion, Project, ProjectFeature, ProjectTask},
     infrastructure::integrations::git::GitSnapshot,
 };
 
@@ -19,4 +19,13 @@ pub struct ProjectSnapshot {
 pub struct Dashboard {
     pub projects: Vec<ProjectSnapshot>,
     pub refreshed_at: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeatureAnalysisResult {
+    pub model: String,
+    pub scanned_files: usize,
+    pub truncated: bool,
+    pub suggestions: Vec<FeatureSuggestion>,
 }

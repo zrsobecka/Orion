@@ -4,7 +4,8 @@ use rusqlite::{params, Connection, OptionalExtension, Row};
 use tauri::{AppHandle, Manager};
 
 use crate::domain::{
-    AddFeatureInput, AddProjectTaskInput, Project, ProjectFeature, ProjectTask, UpdateProjectInput,
+    AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, Project, ProjectFeature,
+    ProjectTask, UpdateProjectInput,
 };
 
 pub struct AppState {
@@ -329,6 +330,65 @@ pub fn add_feature(connection: &Connection, input: &AddFeatureInput) -> Result<S
     Ok(input.project_id.clone())
 }
 
+pub fn add_feature_suggestions(
+    connection: &mut Connection,
+    input: &AcceptFeatureSuggestionsInput,
+) -> Result<String, String> {
+    if input.suggestions.is_empty() || input.suggestions.len() > 20 {
+        return Err("Select between 1 and 20 feature suggestions.".to_string());
+    }
+    get_project(connection, &input.project_id)?;
+    for suggestion in &input.suggestions {
+        validate_feature_status(&suggestion.suggested_status)?;
+        if suggestion.name.trim().is_empty() || suggestion.name.chars().count() > 120 {
+            return Err("Feature name must contain between 1 and 120 characters.".to_string());
+        }
+        if suggestion.description.chars().count() > 600 || suggestion.evidence.chars().count() > 600
+        {
+            return Err("Feature description or evidence is too long.".to_string());
+        }
+        if !suggestion.confidence.is_finite() || !(0.0..=1.0).contains(&suggestion.confidence) {
+            return Err("Feature suggestion confidence must be between 0 and 1.".to_string());
+        }
+    }
+
+    let mut known_names = list_features(connection, &input.project_id)?
+        .into_iter()
+        .map(|feature| feature.name.trim().to_lowercase())
+        .collect::<std::collections::HashSet<_>>();
+    let transaction = connection
+        .transaction()
+        .map_err(|error| format!("Could not start the feature update: {error}"))?;
+    let timestamp = now(&transaction)?;
+    for suggestion in &input.suggestions {
+        let normalized_name = suggestion.name.trim().to_lowercase();
+        if !known_names.insert(normalized_name) {
+            continue;
+        }
+        let id = new_id(&transaction, "feature")?;
+        transaction
+            .execute(
+                "INSERT INTO features
+                 (id, project_id, name, description, status, priority, evidence, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, 'later', ?6, ?7, ?7)",
+                params![
+                    id,
+                    input.project_id,
+                    suggestion.name.trim(),
+                    suggestion.description.trim(),
+                    suggestion.suggested_status,
+                    suggestion.evidence.trim(),
+                    timestamp
+                ],
+            )
+            .map_err(|error| format!("Could not add an analyzed feature: {error}"))?;
+    }
+    transaction
+        .commit()
+        .map_err(|error| format!("Could not save the analyzed features: {error}"))?;
+    Ok(input.project_id.clone())
+}
+
 pub fn update_feature_status(
     connection: &Connection,
     feature_id: &str,
@@ -494,6 +554,57 @@ mod tests {
             result.expect_err("invalid status"),
             "Unknown feature status."
         );
+    }
+
+    #[test]
+    fn accepted_feature_suggestions_are_deduplicated_and_use_a_neutral_horizon() {
+        let mut connection = test_connection();
+        let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        add_feature(
+            &connection,
+            &AddFeatureInput {
+                project_id: project.id.clone(),
+                name: "Project search".to_string(),
+                description: String::new(),
+                status: "working".to_string(),
+                priority: "now".to_string(),
+                evidence: "src/search.ts".to_string(),
+            },
+        )
+        .expect("existing feature");
+
+        add_feature_suggestions(
+            &mut connection,
+            &AcceptFeatureSuggestionsInput {
+                project_id: project.id.clone(),
+                suggestions: vec![
+                    crate::domain::FeatureSuggestion {
+                        name: "project SEARCH".to_string(),
+                        description: "Duplicate".to_string(),
+                        suggested_status: "working".to_string(),
+                        evidence: "src/search.ts".to_string(),
+                        confidence: 0.9,
+                    },
+                    crate::domain::FeatureSuggestion {
+                        name: "Report export".to_string(),
+                        description: "Exports reports.".to_string(),
+                        suggested_status: "in_progress".to_string(),
+                        evidence: "src/reports.ts".to_string(),
+                        confidence: 0.8,
+                    },
+                ],
+            },
+        )
+        .expect("accepted suggestions");
+
+        let features = list_features(&connection, &project.id).expect("features");
+        assert_eq!(features.len(), 2);
+        let report = features
+            .iter()
+            .find(|feature| feature.name == "Report export")
+            .expect("new report feature");
+        assert_eq!(report.priority, "later");
+        assert_eq!(report.status, "in_progress");
     }
 
     #[test]

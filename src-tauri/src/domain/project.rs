@@ -64,3 +64,20 @@ pub struct AddProjectTaskInput {
     pub project_id: String,
     pub title: String,
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeatureSuggestion {
+    pub name: String,
+    pub description: String,
+    pub suggested_status: String,
+    pub evidence: String,
+    pub confidence: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AcceptFeatureSuggestionsInput {
+    pub project_id: String,
+    pub suggestions: Vec<FeatureSuggestion>,
+}

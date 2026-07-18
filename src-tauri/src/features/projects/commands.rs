@@ -4,8 +4,8 @@ use tauri::State;
 
 use crate::{
     domain::{
-        AddFeatureInput, AddProjectTaskInput, Project, ProjectFeature, ProjectTask,
-        UpdateProjectInput,
+        AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, Project,
+        ProjectFeature, ProjectTask, UpdateProjectInput,
     },
     infrastructure::{
         integrations::git::{self, GitSnapshot},
@@ -13,7 +13,7 @@ use crate::{
     },
 };
 
-use super::{Dashboard, ProjectSnapshot};
+use super::{repository_analysis, Dashboard, FeatureAnalysisResult, ProjectSnapshot};
 
 use database::AppState;
 
@@ -133,6 +133,40 @@ pub fn add_feature(
             .lock()
             .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
         database::add_feature(&connection, &input)?
+    };
+    load_snapshot(&state, &project_id)
+}
+
+#[tauri::command]
+pub async fn analyze_project_features(
+    project_id: String,
+    state: State<'_, AppState>,
+) -> Result<FeatureAnalysisResult, String> {
+    let (path, features) = {
+        let connection = state
+            .connection
+            .lock()
+            .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
+        let project = database::get_project(&connection, &project_id)?;
+        let features = database::list_features(&connection, &project_id)?;
+        (project.path, features)
+    };
+    tauri::async_runtime::spawn_blocking(move || repository_analysis::analyze(&path, &features))
+        .await
+        .map_err(|error| format!("The repository analysis stopped unexpectedly: {error}"))?
+}
+
+#[tauri::command]
+pub fn accept_feature_suggestions(
+    input: AcceptFeatureSuggestionsInput,
+    state: State<'_, AppState>,
+) -> Result<ProjectSnapshot, String> {
+    let project_id = {
+        let mut connection = state
+            .connection
+            .lock()
+            .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
+        database::add_feature_suggestions(&mut connection, &input)?
     };
     load_snapshot(&state, &project_id)
 }

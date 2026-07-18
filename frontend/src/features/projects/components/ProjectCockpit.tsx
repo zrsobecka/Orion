@@ -21,14 +21,18 @@ import { desktopRuntime } from "../../../infrastructure/desktop-runtime";
 import { Modal } from "../../../shared/ui/Modal";
 import { featureStatusLabels, formatRelativeTime, getFeatureCounts } from "../projectModel";
 import type {
+  AcceptFeatureSuggestionsInput,
   AddFeatureInput,
   AddProjectTaskInput,
+  FeatureAnalysisResult,
   FeaturePriority,
+  FeatureSuggestion,
   FeatureStatus,
   ProjectSnapshot,
   ProjectStatus,
   UpdateProjectInput,
 } from "../types";
+import { FeatureSuggestionsModal } from "./FeatureSuggestionsModal";
 import { ProjectTasks } from "./ProjectTasks";
 
 interface ProjectCockpitProps {
@@ -37,6 +41,8 @@ interface ProjectCockpitProps {
   onRefresh: () => void;
   onUpdateProject: (input: UpdateProjectInput) => Promise<void>;
   onAddFeature: (input: AddFeatureInput) => Promise<void>;
+  onAnalyzeFeatures: (projectId: string) => Promise<FeatureAnalysisResult>;
+  onAcceptFeatureSuggestions: (input: AcceptFeatureSuggestionsInput) => Promise<void>;
   onAddProjectTask: (input: AddProjectTaskInput) => Promise<void>;
   onSetProjectTaskCompleted: (taskId: string, completed: boolean) => Promise<void>;
   onRemoveProjectTask: (taskId: string) => Promise<void>;
@@ -52,6 +58,8 @@ export function ProjectCockpit({
   onRefresh,
   onUpdateProject,
   onAddFeature,
+  onAnalyzeFeatures,
+  onAcceptFeatureSuggestions,
   onAddProjectTask,
   onSetProjectTaskCompleted,
   onRemoveProjectTask,
@@ -59,6 +67,11 @@ export function ProjectCockpit({
   onRemoveProject,
 }: ProjectCockpitProps) {
   const [showFeatureModal, setShowFeatureModal] = useState(false);
+  const [showFeatureSuggestions, setShowFeatureSuggestions] = useState(false);
+  const [featureAnalysis, setFeatureAnalysis] = useState<FeatureAnalysisResult | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analyzingFeatures, setAnalyzingFeatures] = useState(false);
+  const [savingSuggestions, setSavingSuggestions] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const counts = getFeatureCounts(snapshot);
@@ -68,6 +81,33 @@ export function ProjectCockpit({
       [...snapshot.features].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
     [snapshot.features],
   );
+
+  const analyzeFeatures = async () => {
+    setShowFeatureSuggestions(true);
+    setFeatureAnalysis(null);
+    setAnalysisError(null);
+    setAnalyzingFeatures(true);
+    try {
+      setFeatureAnalysis(await onAnalyzeFeatures(snapshot.project.id));
+    } catch (caught) {
+      setAnalysisError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setAnalyzingFeatures(false);
+    }
+  };
+
+  const acceptSuggestions = async (suggestions: FeatureSuggestion[]) => {
+    setSavingSuggestions(true);
+    setAnalysisError(null);
+    try {
+      await onAcceptFeatureSuggestions({ projectId: snapshot.project.id, suggestions });
+      setShowFeatureSuggestions(false);
+    } catch (caught) {
+      setAnalysisError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSavingSuggestions(false);
+    }
+  };
 
   return (
     <div className="workspace-view cockpit-view">
@@ -124,12 +164,22 @@ export function ProjectCockpit({
                 <p className="eyebrow">Capability map</p>
                 <h2>Features</h2>
               </div>
-              <button
-                className="button button--primary button--small"
-                onClick={() => setShowFeatureModal(true)}
-              >
-                <Plus size={16} /> Add feature
-              </button>
+              <div className="panel__header-actions">
+                <button
+                  className="button button--secondary button--small"
+                  disabled={analyzingFeatures}
+                  onClick={() => void analyzeFeatures()}
+                >
+                  <Sparkles size={16} />
+                  {analyzingFeatures ? "Scanning…" : "Scan repository"}
+                </button>
+                <button
+                  className="button button--primary button--small"
+                  onClick={() => setShowFeatureModal(true)}
+                >
+                  <Plus size={16} /> Add feature
+                </button>
+              </div>
             </div>
             <div className="feature-summary" aria-label="Feature status summary">
               <FeatureSummary label="Working" value={counts.working} tone="working" />
@@ -214,6 +264,17 @@ export function ProjectCockpit({
             await onAddFeature(input);
             setShowFeatureModal(false);
           }}
+        />
+      )}
+      {showFeatureSuggestions && (
+        <FeatureSuggestionsModal
+          analysis={featureAnalysis}
+          error={analysisError}
+          loading={analyzingFeatures}
+          saving={savingSuggestions}
+          onAccept={acceptSuggestions}
+          onClose={() => setShowFeatureSuggestions(false)}
+          onRetry={() => void analyzeFeatures()}
         />
       )}
       {showProjectModal && (

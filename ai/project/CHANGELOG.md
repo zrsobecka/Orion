@@ -2,6 +2,9 @@
 
 ## 2026-07-18
 
+- Added a reusable local LM Studio structured-chat integration with bounded timeouts, model discovery, and optional configuration overrides.
+- Added evidence-backed repository feature proposals with secret-safe context selection, explicit review, duplicate protection, and transactional acceptance.
+- Kept whole-application overview and user-flow evaluation as a separate future AI workflow rather than coupling it to feature discovery.
 - Moved codebase and workflow-diagram knowledge under `ai/project/` and reduced always-loaded repository context.
 - Standardized Cargo output outside Dropbox: reusable development cache, isolated release targets, cleanup only after successful packaging, and failure-cache retention.
 - Stopped duplicating release binaries under `artifacts/`; current portable and installer outputs now use stable names under ignored `app/`.

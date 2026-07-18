@@ -94,3 +94,23 @@ export interface AddProjectTaskInput {
   projectId: string;
   title: string;
 }
+
+export interface FeatureSuggestion {
+  name: string;
+  description: string;
+  suggestedStatus: Exclude<FeatureStatus, "blocked">;
+  evidence: string;
+  confidence: number;
+}
+
+export interface FeatureAnalysisResult {
+  model: string;
+  scannedFiles: number;
+  truncated: boolean;
+  suggestions: FeatureSuggestion[];
+}
+
+export interface AcceptFeatureSuggestionsInput {
+  projectId: string;
+  suggestions: FeatureSuggestion[];
+}
