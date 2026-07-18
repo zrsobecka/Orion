@@ -24,3 +24,7 @@ Each project keeps one explicit, smaller outcome that defines what the builder i
 - Dates, estimates, owners, or simultaneous active focuses.
 - Automatically declaring a focus complete.
 - Reassigning old tasks when a new focus starts.
+
+## Visual progress
+
+The mission map uses two distinct measures. The outer ring contains one equal segment per feature and communicates status through color; it does not calculate a project percentage. The inner ring shows completed tasks only for the active focus. Selecting either ring changes the explanation beneath it, and short transitions respect `prefers-reduced-motion`.

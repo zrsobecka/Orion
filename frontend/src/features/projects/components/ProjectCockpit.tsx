@@ -7,7 +7,6 @@ import {
   FolderOpen,
   GitBranch,
   GitCommitHorizontal,
-  Orbit,
   Pencil,
   Plus,
   Radio,
@@ -35,6 +34,7 @@ import type {
 } from "../types";
 import { FeatureSuggestionsModal } from "./FeatureSuggestionsModal";
 import { ProjectTasks } from "./ProjectTasks";
+import { ProgressRings, type ProgressRingSelection } from "./ProgressRings";
 
 interface ProjectCockpitProps {
   snapshot: ProjectSnapshot;
@@ -320,6 +320,13 @@ function MissionOrbit({
   openTaskCount: number;
   workingFeatureCount: number;
 }) {
+  const [selectedRing, setSelectedRing] = useState<ProgressRingSelection>("features");
+  const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
+  const focusTasks = activeFocus
+    ? snapshot.tasks.filter((task) => task.focusId === activeFocus.id)
+    : [];
+  const completedFocusTasks = focusTasks.filter((task) => task.completed).length;
+
   return (
     <section className="mission-map" aria-labelledby="mission-orbit-title">
       <div aria-hidden="true" className="mission-map__starfield">
@@ -374,15 +381,12 @@ function MissionOrbit({
           />
         </svg>
 
-        <div className="mission-core">
-          <span aria-hidden="true" className="mission-core__ring mission-core__ring--outer" />
-          <span aria-hidden="true" className="mission-core__ring mission-core__ring--inner" />
-          <span className="mission-core__icon">
-            <Orbit size={26} />
-          </span>
-          <small>Project core</small>
-          <strong>{snapshot.project.name}</strong>
-        </div>
+        <ProgressRings
+          features={snapshot.features}
+          focusTasks={focusTasks}
+          selected={selectedRing}
+          onSelect={setSelectedRing}
+        />
 
         <div className="orbit-node orbit-node--tasks">
           <span className="orbit-node__icon">
@@ -415,12 +419,20 @@ function MissionOrbit({
 
       <div className="mission-map__brief">
         <div>
-          <span>Mission goal</span>
-          <strong>{snapshot.project.goal || "Add what this application should achieve."}</strong>
+          <span>{selectedRing === "features" ? "Big project goal" : "Active focus"}</span>
+          <strong>
+            {selectedRing === "features"
+              ? snapshot.project.goal || "Add what this application should achieve."
+              : activeFocus?.title || "Start a focus to define the current outcome."}
+          </strong>
         </div>
         <div>
-          <span>Pinned focus</span>
-          <strong>{snapshot.project.nextAction || "No focus note pinned."}</strong>
+          <span>{selectedRing === "features" ? "Feature evidence" : "Focus progress"}</span>
+          <strong>
+            {selectedRing === "features"
+              ? `${snapshot.features.length} segments · ${workingFeatureCount} working · ${snapshot.features.filter((feature) => feature.status === "blocked").length} blocked`
+              : `${completedFocusTasks} of ${focusTasks.length} tasks complete`}
+          </strong>
         </div>
       </div>
     </section>
