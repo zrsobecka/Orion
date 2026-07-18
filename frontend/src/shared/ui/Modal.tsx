@@ -6,7 +6,7 @@ interface ModalProps {
   eyebrow?: string;
   children: ReactNode;
   onClose: () => void;
-  size?: "small" | "medium";
+  size?: "small" | "medium" | "large";
 }
 
 export function Modal({ title, eyebrow, children, onClose, size = "medium" }: ModalProps) {

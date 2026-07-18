@@ -1,6 +1,8 @@
-use std::{path::PathBuf, process::Command};
+use std::path::PathBuf;
 
 use serde::Serialize;
+
+use super::process::background_command;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -54,7 +56,7 @@ impl GitSnapshot {
 }
 
 fn run_git(path: &str, arguments: &[&str]) -> Result<String, String> {
-    let output = Command::new("git")
+    let output = background_command("git")
         .arg("-C")
         .arg(path)
         .args(arguments)
@@ -128,7 +130,7 @@ pub fn read_snapshot(path: &str) -> Result<GitSnapshot, String> {
 }
 
 fn has_head(path: &str) -> bool {
-    Command::new("git")
+    background_command("git")
         .arg("-C")
         .arg(path)
         .args(["rev-parse", "--verify", "HEAD"])

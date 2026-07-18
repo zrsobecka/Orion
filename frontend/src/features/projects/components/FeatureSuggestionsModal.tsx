@@ -29,7 +29,7 @@ export function FeatureSuggestionsModal({
     analysis?.suggestions.filter(({ name }) => !rejectedNames.has(name)) ?? [];
 
   return (
-    <Modal eyebrow="Local AI review" title="Repository feature scan" onClose={onClose}>
+    <Modal eyebrow="Local AI review" size="large" title="Repository feature scan" onClose={onClose}>
       <div className="analysis-modal">
         {loading && (
           <div className="analysis-state" aria-live="polite">

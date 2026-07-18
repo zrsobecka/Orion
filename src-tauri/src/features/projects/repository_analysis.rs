@@ -2,7 +2,6 @@ use std::{
     collections::HashSet,
     fs,
     path::{Path, PathBuf},
-    process::Command,
 };
 
 use crate::{
@@ -13,6 +12,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 use super::FeatureAnalysisResult;
+use crate::infrastructure::integrations::process::background_command;
 
 // Keep local 12B models responsive while still sampling several high-signal
 // product, test, and source files. Longer whole-product review belongs to the
@@ -147,7 +147,7 @@ fn build_context(root: &Path, existing: &[ProjectFeature]) -> Result<RepositoryC
     let canonical_root = root
         .canonicalize()
         .map_err(|error| format!("Could not resolve the repository before analysis: {error}"))?;
-    let output = Command::new("git")
+    let output = background_command("git")
         .arg("-C")
         .arg(&canonical_root)
         .args([

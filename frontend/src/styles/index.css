@@ -2301,6 +2301,9 @@ h3 {
 }
 
 .modal {
+  display: flex;
+  max-height: calc(100dvh - 48px);
+  flex-direction: column;
   width: min(100%, 570px);
   overflow: hidden;
   background: #0a1525;
@@ -2314,7 +2317,17 @@ h3 {
   max-width: 450px;
 }
 
+.modal--large {
+  max-width: 720px;
+}
+
+.modal > :not(.modal__header) {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .modal__header {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;

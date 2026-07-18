@@ -32,4 +32,14 @@ describe("Modal", () => {
     await user.tab();
     expect(screen.getByRole("button", { name: "Close dialog" })).toHaveFocus();
   });
+
+  it("applies the large size variant", () => {
+    render(
+      <Modal size="large" title="Repository feature scan" onClose={() => undefined}>
+        Loading…
+      </Modal>,
+    );
+
+    expect(screen.getByRole("dialog")).toHaveClass("modal--large");
+  });
 });
