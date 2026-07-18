@@ -14,7 +14,7 @@ import {
   Target,
   Trash2,
 } from "lucide-react";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { desktopRuntime } from "../../../infrastructure/desktop-runtime";
 import { Modal } from "../../../shared/ui/Modal";
 import { featureStatusLabels, formatRelativeTime, getFeatureCounts } from "../projectModel";
@@ -88,6 +88,16 @@ export function ProjectCockpit({
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const counts = getFeatureCounts(snapshot);
   const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
+  const [selectedFocusId, setSelectedFocusId] = useState<string | null>(activeFocus?.id ?? null);
+  const [selectedRing, setSelectedRing] = useState<ProgressRingSelection>("features");
+  const previousActiveFocusId = useRef(activeFocus?.id ?? null);
+
+  useEffect(() => {
+    if (previousActiveFocusId.current === activeFocus?.id) return;
+    previousActiveFocusId.current = activeFocus?.id ?? null;
+    setSelectedFocusId(activeFocus?.id ?? null);
+    setSelectedRing(activeFocus ? "focus" : "features");
+  }, [activeFocus]);
   const openTaskCount = snapshot.tasks.filter(
     (task) => task.focusId === activeFocus?.id && !task.completed,
   ).length;
@@ -159,6 +169,10 @@ export function ProjectCockpit({
       <div className="mission-deck">
         <MissionOrbit
           openTaskCount={openTaskCount}
+          onSelectFocus={setSelectedFocusId}
+          onSelectRing={setSelectedRing}
+          selectedFocusId={selectedFocusId}
+          selectedRing={selectedRing}
           snapshot={snapshot}
           workingFeatureCount={counts.working}
         />
@@ -166,10 +180,15 @@ export function ProjectCockpit({
           features={snapshot.features}
           focuses={snapshot.focuses}
           projectId={snapshot.project.id}
+          selectedFocusId={selectedFocusId}
           tasks={snapshot.tasks}
           onAdd={onAddProjectTask}
           onRemove={onRemoveProjectTask}
           onSetCompleted={onSetProjectTaskCompleted}
+          onSelectFocus={(focusId) => {
+            setSelectedFocusId(focusId);
+            setSelectedRing("focus");
+          }}
           onStartFocus={onStartProjectFocus}
         />
       </div>
@@ -330,15 +349,24 @@ function MissionOrbit({
   snapshot,
   openTaskCount,
   workingFeatureCount,
+  selectedFocusId,
+  selectedRing,
+  onSelectFocus,
+  onSelectRing,
 }: {
   snapshot: ProjectSnapshot;
   openTaskCount: number;
   workingFeatureCount: number;
+  selectedFocusId: string | null;
+  selectedRing: ProgressRingSelection;
+  onSelectFocus: (focusId: string) => void;
+  onSelectRing: (selection: ProgressRingSelection) => void;
 }) {
-  const [selectedRing, setSelectedRing] = useState<ProgressRingSelection>("features");
   const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
-  const focusTasks = activeFocus
-    ? snapshot.tasks.filter((task) => task.focusId === activeFocus.id)
+  const selectedFocus =
+    snapshot.focuses.find((focus) => focus.id === selectedFocusId) ?? activeFocus;
+  const focusTasks = selectedFocus
+    ? snapshot.tasks.filter((task) => task.focusId === selectedFocus.id)
     : [];
   const completedFocusTasks = focusTasks.filter((task) => task.completed).length;
 
@@ -398,9 +426,12 @@ function MissionOrbit({
 
         <ProgressRings
           features={snapshot.features}
-          focusTasks={focusTasks}
+          focuses={snapshot.focuses}
+          tasks={snapshot.tasks}
+          selectedFocusId={selectedFocus?.id ?? null}
           selected={selectedRing}
-          onSelect={setSelectedRing}
+          onSelect={onSelectRing}
+          onSelectFocus={onSelectFocus}
         />
 
         <div className="orbit-node orbit-node--tasks">
@@ -434,11 +465,17 @@ function MissionOrbit({
 
       <div className="mission-map__brief">
         <div>
-          <span>{selectedRing === "features" ? "Big project goal" : "Active focus"}</span>
+          <span>
+            {selectedRing === "features"
+              ? "Big project goal"
+              : selectedFocus?.status === "active"
+                ? "Active focus"
+                : "Previous focus"}
+          </span>
           <strong>
             {selectedRing === "features"
               ? snapshot.project.goal || "Add what this application should achieve."
-              : activeFocus?.title || "Start a focus to define the current outcome."}
+              : selectedFocus?.title || "Start a focus to define the current outcome."}
           </strong>
         </div>
         <div>

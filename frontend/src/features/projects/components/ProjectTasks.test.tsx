@@ -13,6 +13,14 @@ const focuses: ProjectFocus[] = [
     startedAt: "2026-07-17T09:00:00Z",
     endedAt: null,
   },
+  {
+    id: "focus-old",
+    projectId: "project-1",
+    title: "Build the foundation",
+    status: "archived",
+    startedAt: "2026-07-16T09:00:00Z",
+    endedAt: "2026-07-17T09:00:00Z",
+  },
 ];
 
 const features: ProjectFeature[] = [
@@ -51,10 +59,12 @@ describe("ProjectTasks", () => {
         projectId="project-1"
         features={[]}
         focuses={focuses}
+        selectedFocusId="focus-1"
         tasks={[]}
         onAdd={onAdd}
         onRemove={vi.fn()}
         onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
       />,
     );
@@ -79,10 +89,12 @@ describe("ProjectTasks", () => {
         projectId="project-1"
         features={[]}
         focuses={focuses}
+        selectedFocusId="focus-1"
         tasks={tasks}
         onAdd={vi.fn()}
         onRemove={onRemove}
         onSetCompleted={onSetCompleted}
+        onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
       />,
     );
@@ -102,10 +114,12 @@ describe("ProjectTasks", () => {
         projectId="project-1"
         features={features}
         focuses={focuses}
+        selectedFocusId="focus-1"
         tasks={[{ ...tasks[0], featureId: "feature-1" }]}
         onAdd={onAdd}
         onRemove={vi.fn()}
         onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
       />,
     );
@@ -130,10 +144,12 @@ describe("ProjectTasks", () => {
         projectId="project-1"
         features={[]}
         focuses={focuses}
+        selectedFocusId="focus-1"
         tasks={tasks}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
         onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
         onStartFocus={onStartFocus}
       />,
     );
@@ -149,5 +165,30 @@ describe("ProjectTasks", () => {
       projectId: "project-1",
       title: "Make commit evidence useful",
     });
+  });
+
+  it("switches the task list to a previous focus without allowing new tasks there", async () => {
+    const user = userEvent.setup();
+    const onSelectFocus = vi.fn();
+    const previousTask = { ...tasks[0], id: "task-old", focusId: "focus-old", title: "Set up Git" };
+    render(
+      <ProjectTasks
+        projectId="project-1"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-old"
+        tasks={[tasks[0], previousTask]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onSetCompleted={vi.fn()}
+        onSelectFocus={onSelectFocus}
+        onStartFocus={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Set up Git")).toBeInTheDocument();
+    expect(screen.queryByLabelText("New task")).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("View focus"), "focus-1");
+    expect(onSelectFocus).toHaveBeenCalledWith("focus-1");
   });
 });

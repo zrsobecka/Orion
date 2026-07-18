@@ -13,6 +13,8 @@ interface ProjectTasksProps {
   features: ProjectFeature[];
   focuses: ProjectFocus[];
   tasks: ProjectTask[];
+  selectedFocusId: string | null;
+  onSelectFocus: (focusId: string) => void;
   onAdd: (input: AddProjectTaskInput) => Promise<void>;
   onSetCompleted: (taskId: string, completed: boolean) => Promise<void>;
   onRemove: (taskId: string) => Promise<void>;
@@ -24,6 +26,8 @@ export function ProjectTasks({
   features,
   focuses,
   tasks,
+  selectedFocusId,
+  onSelectFocus,
   onAdd,
   onSetCompleted,
   onRemove,
@@ -36,9 +40,13 @@ export function ProjectTasks({
   const [showFocusForm, setShowFocusForm] = useState(false);
   const [startingFocus, setStartingFocus] = useState(false);
   const activeFocus = focuses.find((focus) => focus.status === "active") ?? null;
-  const activeTasks = activeFocus ? tasks.filter((task) => task.focusId === activeFocus.id) : [];
+  const selectedFocus =
+    focuses.find((focus) => focus.id === selectedFocusId) ?? activeFocus ?? null;
+  const selectedTasks = selectedFocus
+    ? tasks.filter((task) => task.focusId === selectedFocus.id)
+    : [];
   const archivedFocusCount = focuses.filter((focus) => focus.status === "archived").length;
-  const completedCount = activeTasks.filter((task) => task.completed).length;
+  const completedCount = selectedTasks.filter((task) => task.completed).length;
 
   const startFocus = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -99,12 +107,12 @@ export function ProjectTasks({
           <p className="eyebrow">
             <Zap size={13} /> Manual flight plan
           </p>
-          <h2 id="project-tasks-title">{activeFocus?.title ?? "Choose a project focus"}</h2>
+          <h2 id="project-tasks-title">{selectedFocus?.title ?? "Choose a project focus"}</h2>
         </div>
         <div className="task-console__header-actions">
-          {activeFocus && (
+          {selectedFocus && (
             <span className="task-console__count">
-              {completedCount}/{activeTasks.length} done
+              {completedCount}/{selectedTasks.length} done
             </span>
           )}
           <button
@@ -136,14 +144,29 @@ export function ProjectTasks({
         </form>
       )}
 
-      {activeFocus && archivedFocusCount > 0 && (
-        <p className="task-console__history">
-          <Archive size={13} /> {archivedFocusCount} previous{" "}
-          {archivedFocusCount === 1 ? "focus" : "focuses"} saved
-        </p>
+      {activeFocus && archivedFocusCount > 0 && selectedFocus && (
+        <div className="task-console__history">
+          <span>
+            <Archive size={13} /> View focus
+          </span>
+          <label className="task-console__focus-switcher">
+            <span className="sr-only">View focus</span>
+            <select
+              aria-label="View focus"
+              onChange={(event) => onSelectFocus(event.target.value)}
+              value={selectedFocus.id}
+            >
+              {focuses.map((focus) => (
+                <option key={focus.id} value={focus.id}>
+                  {focus.title} · {focus.status === "active" ? "active" : "previous"}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       )}
 
-      {activeFocus && (
+      {activeFocus && selectedFocus?.status === "active" && (
         <form className="task-composer" onSubmit={submit}>
           <label className="sr-only" htmlFor="project-task-title">
             New task
@@ -159,7 +182,7 @@ export function ProjectTasks({
           <label className="task-composer__feature">
             <span className="sr-only">Related feature</span>
             <select aria-label="Related feature" defaultValue="" name="featureId">
-              <option value="">No feature link</option>
+              <option value="">No feature</option>
               {features.map((feature) => (
                 <option key={feature.id} value={feature.id}>
                   {feature.name}
@@ -188,17 +211,21 @@ export function ProjectTasks({
           <strong>Start with one clear outcome</strong>
           <p>Tasks added afterward will measure only this focus, not the whole project.</p>
         </div>
-      ) : activeTasks.length === 0 ? (
+      ) : selectedTasks.length === 0 ? (
         <div className="task-console__empty">
           <span className="task-console__empty-orbit">
             <Circle size={18} />
           </span>
           <strong>Your flight plan is empty</strong>
-          <p>Add the first thing you want to remember for this project.</p>
+          <p>
+            {selectedFocus?.status === "active"
+              ? "Add the first thing you want to remember for this project."
+              : "No tasks were saved in this previous focus."}
+          </p>
         </div>
       ) : (
         <div className="task-list">
-          {activeTasks.map((task) => {
+          {selectedTasks.map((task) => {
             const busy = busyTaskId === task.id;
             return (
               <article
