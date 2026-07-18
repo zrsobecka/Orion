@@ -51,6 +51,24 @@ export interface GitCommit {
   subject: string;
   authoredAt: string;
   author: string;
+  changedFiles: number;
+  additions: number;
+  deletions: number;
+}
+
+export interface GitFileChange {
+  path: string;
+  status: "added" | "modified" | "deleted" | "renamed" | "type changed";
+  additions: number | null;
+  deletions: number | null;
+}
+
+export interface GitCommitDetails {
+  hash: string;
+  files: GitFileChange[];
+  changeTypes: string[];
+  diff: string;
+  diffTruncated: boolean;
 }
 
 export interface GitBranch {

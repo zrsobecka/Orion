@@ -33,7 +33,7 @@ Success means a builder can resume work on any application without opening sever
 - Manual project tasks that can be added, completed, reopened, and removed.
 - Feature inventory with status: planned, in progress, working, or blocked.
 - Priority horizon: now, next, or later.
-- Git telemetry: current branch, local branches, recent commits, changed-file count, and upstream divergence.
+- Git telemetry: current branch, local branches, recent commits, commit file/line evidence, changed-file count, and upstream divergence.
 - Manual refresh and actionable repository errors.
 - Evidence-backed repository feature proposals through local LM Studio, accepted explicitly by the builder.
 

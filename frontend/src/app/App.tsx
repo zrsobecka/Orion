@@ -87,6 +87,7 @@ export default function App() {
               onBack={workspace.showOverview}
               onAnalyzeFeatures={workspace.analyzeProjectFeatures}
               onRefresh={workspace.refresh}
+              onGetCommitDetails={workspace.getCommitDetails}
               onRemoveProject={workspace.removeProject}
               onRemoveProjectTask={workspace.removeProjectTask}
               onSetProjectTaskCompleted={workspace.setProjectTaskCompleted}

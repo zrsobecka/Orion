@@ -33,6 +33,24 @@ fn project_snapshot(
     }
 }
 
+#[tauri::command]
+pub async fn get_commit_details(
+    project_id: String,
+    hash: String,
+    state: State<'_, AppState>,
+) -> Result<git::GitCommitDetails, String> {
+    let path = {
+        let connection = state
+            .connection
+            .lock()
+            .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
+        database::get_project(&connection, &project_id)?.path
+    };
+    tauri::async_runtime::spawn_blocking(move || git::read_commit_details(&path, &hash))
+        .await
+        .map_err(|error| format!("Commit inspection stopped unexpectedly: {error}"))?
+}
+
 fn load_snapshot(state: &State<'_, AppState>, project_id: &str) -> Result<ProjectSnapshot, String> {
     let (project, features, focuses, tasks) = {
         let connection = state

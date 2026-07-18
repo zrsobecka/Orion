@@ -6,7 +6,6 @@ import {
   Clock3,
   FolderOpen,
   GitBranch,
-  GitCommitHorizontal,
   Pencil,
   Plus,
   Radio,
@@ -27,6 +26,7 @@ import type {
   FeaturePriority,
   FeatureSuggestion,
   FeatureStatus,
+  GitCommitDetails,
   ProjectSnapshot,
   ProjectStatus,
   StartProjectFocusInput,
@@ -35,11 +35,13 @@ import type {
 import { FeatureSuggestionsModal } from "./FeatureSuggestionsModal";
 import { ProjectTasks } from "./ProjectTasks";
 import { ProgressRings, type ProgressRingSelection } from "./ProgressRings";
+import { CommitHistory } from "./CommitHistory";
 
 interface ProjectCockpitProps {
   snapshot: ProjectSnapshot;
   onBack: () => void;
   onRefresh: () => void;
+  onGetCommitDetails: (projectId: string, hash: string) => Promise<GitCommitDetails>;
   onUpdateProject: (input: UpdateProjectInput) => Promise<void>;
   onAddFeature: (input: AddFeatureInput) => Promise<void>;
   onAnalyzeFeatures: (projectId: string) => Promise<FeatureAnalysisResult>;
@@ -58,6 +60,7 @@ export function ProjectCockpit({
   snapshot,
   onBack,
   onRefresh,
+  onGetCommitDetails,
   onUpdateProject,
   onAddFeature,
   onAnalyzeFeatures,
@@ -261,7 +264,11 @@ export function ProjectCockpit({
         </main>
 
         <aside className="cockpit-telemetry">
-          <GitTelemetry snapshot={snapshot} onRefresh={onRefresh} />
+          <GitTelemetry
+            snapshot={snapshot}
+            onRefresh={onRefresh}
+            onGetCommitDetails={onGetCommitDetails}
+          />
         </aside>
       </div>
 
@@ -459,9 +466,11 @@ function FeatureSummary({
 function GitTelemetry({
   snapshot,
   onRefresh,
+  onGetCommitDetails,
 }: {
   snapshot: ProjectSnapshot;
   onRefresh: () => void;
+  onGetCommitDetails: (projectId: string, hash: string) => Promise<GitCommitDetails>;
 }) {
   const { git } = snapshot;
   if (!git.available) {
@@ -522,33 +531,11 @@ function GitTelemetry({
         </div>
       </section>
 
-      <section className="panel telemetry-panel commit-panel">
-        <div className="panel__header panel__header--compact">
-          <div>
-            <p className="eyebrow">Latest changes</p>
-            <h2>Recent commits</h2>
-          </div>
-          <GitCommitHorizontal size={18} />
-        </div>
-        {git.commits.length === 0 ? (
-          <p className="subtle-copy">This repository has no commits yet.</p>
-        ) : (
-          <div className="commit-list">
-            {git.commits.slice(0, 5).map((commit) => (
-              <article key={commit.hash}>
-                <span className="commit-list__node" />
-                <div>
-                  <strong>{commit.subject}</strong>
-                  <p>
-                    <code>{commit.shortHash}</code>
-                    <span>{formatRelativeTime(commit.authoredAt)}</span>
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+      <CommitHistory
+        commits={git.commits.slice(0, 5)}
+        projectId={snapshot.project.id}
+        onLoadDetails={onGetCommitDetails}
+      />
     </>
   );
 }

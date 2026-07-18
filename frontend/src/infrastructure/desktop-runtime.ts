@@ -8,6 +8,7 @@ import type {
   Dashboard,
   FeatureAnalysisResult,
   FeatureStatus,
+  GitCommitDetails,
   ProjectSnapshot,
   StartProjectFocusInput,
   UpdateProjectInput,
@@ -27,6 +28,27 @@ export const desktopRuntime = {
   async getDashboard(): Promise<Dashboard> {
     if (!isTauri()) return structuredClone(browserDashboard);
     return invoke<Dashboard>("get_dashboard");
+  },
+
+  async getCommitDetails(projectId: string, hash: string): Promise<GitCommitDetails> {
+    if (isTauri()) return invoke<GitCommitDetails>("get_commit_details", { projectId, hash });
+    const snapshot = findBrowserSnapshot(projectId);
+    const commit = snapshot.git.commits.find((candidate) => candidate.hash === hash);
+    if (!commit) throw new Error("The commit is no longer available.");
+    return {
+      hash,
+      files: [
+        {
+          path: "frontend/src/features/projects/components/ProjectCockpit.tsx",
+          status: "modified",
+          additions: commit.additions,
+          deletions: commit.deletions,
+        },
+      ],
+      changeTypes: ["modified"],
+      diff: "diff --git a/frontend/src/features/projects/components/ProjectCockpit.tsx b/frontend/src/features/projects/components/ProjectCockpit.tsx\n",
+      diffTruncated: false,
+    };
   },
 
   async selectProjectFolder(): Promise<string | null> {

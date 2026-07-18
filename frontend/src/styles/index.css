@@ -2460,6 +2460,10 @@ h3 {
   padding: 10px 0;
 }
 
+.commit-list article.is-expanded {
+  padding-bottom: 13px;
+}
+
 .commit-list article:not(:last-child)::before {
   position: absolute;
   top: 20px;
@@ -2490,6 +2494,169 @@ h3 {
   line-height: 1.4;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.commit-list__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.commit-list__summary > svg {
+  margin-top: 2px;
+  color: #688198;
+  transition: transform 160ms ease;
+}
+
+.commit-list article.is-expanded .commit-list__summary > svg {
+  transform: rotate(180deg);
+}
+
+.commit-list__summary:focus-visible {
+  outline: 2px solid rgba(24, 213, 245, 0.75);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.commit-list__meta,
+.commit-list__stats {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  color: #5e758c;
+  font-size: 0.59rem;
+}
+
+.commit-list__stats {
+  gap: 7px;
+  color: #71879b;
+}
+
+.commit-details {
+  grid-column: 2;
+  min-width: 0;
+  margin-top: 2px;
+  overflow: hidden;
+  background: rgba(4, 12, 24, 0.72);
+  border: 1px solid rgba(36, 72, 101, 0.58);
+  border-radius: 8px;
+  animation: commit-details-in 170ms ease-out;
+}
+
+.commit-details > p {
+  padding: 10px;
+  margin: 0;
+}
+
+.commit-details__types {
+  display: flex;
+  gap: 5px;
+  padding: 9px 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(36, 72, 101, 0.48);
+}
+
+.commit-details__types span {
+  padding: 3px 6px;
+  color: #9bdfee;
+  font-size: 0.53rem;
+  text-transform: capitalize;
+  background: rgba(24, 213, 245, 0.07);
+  border: 1px solid rgba(24, 213, 245, 0.16);
+  border-radius: 999px;
+}
+
+.commit-files {
+  max-height: 210px;
+  overflow: auto;
+}
+
+.commit-files > div {
+  display: grid;
+  grid-template-columns: 15px minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 9px;
+  border-bottom: 1px solid rgba(29, 59, 84, 0.4);
+}
+
+.commit-files svg {
+  color: #688aa2;
+}
+
+.commit-files span {
+  overflow: hidden;
+  color: #adc2d4;
+  font-size: 0.56rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commit-files small {
+  color: #6f889d;
+  font-size: 0.51rem;
+  text-transform: capitalize;
+}
+
+.commit-files code {
+  font-size: 0.52rem;
+  white-space: nowrap;
+}
+
+.commit-diff {
+  padding: 8px 10px 10px;
+}
+
+.commit-diff summary {
+  color: #829bb0;
+  font-size: 0.57rem;
+  cursor: pointer;
+}
+
+.commit-diff pre {
+  max-height: 280px;
+  padding: 9px;
+  margin-top: 8px;
+  overflow: auto;
+  color: #b6ccdc;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.51rem;
+  line-height: 1.55;
+  background: #030914;
+  border-radius: 6px;
+}
+
+.commit-diff > small {
+  display: block;
+  margin-top: 7px;
+  color: var(--amber);
+  font-size: 0.52rem;
+}
+
+.commit-details__error {
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr) auto;
+  gap: 7px;
+  align-items: center;
+  padding: 10px;
+  color: #ffd8df;
+  font-size: 0.57rem;
+}
+
+.commit-details__error button {
+  padding: 3px 6px;
+  color: #ffc5cf;
+  font-size: 0.54rem;
+  background: rgba(255, 113, 137, 0.08);
+  border: 1px solid rgba(255, 113, 137, 0.2);
+  border-radius: 5px;
 }
 
 .commit-list p {
@@ -2825,6 +2992,13 @@ h3 {
   from {
     opacity: 0;
     stroke-dashoffset: 18;
+  }
+}
+
+@keyframes commit-details-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
 

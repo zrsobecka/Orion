@@ -6,6 +6,7 @@ import type {
   AddProjectTaskInput,
   FeatureAnalysisResult,
   FeatureStatus,
+  GitCommitDetails,
   ProjectSnapshot,
   StartProjectFocusInput,
   UpdateProjectInput,
@@ -116,6 +117,12 @@ export function useProjects() {
   const analyzeProjectFeatures = useCallback(
     (projectId: string): Promise<FeatureAnalysisResult> =>
       desktopRuntime.analyzeProjectFeatures(projectId),
+    [],
+  );
+
+  const getCommitDetails = useCallback(
+    (projectId: string, hash: string): Promise<GitCommitDetails> =>
+      desktopRuntime.getCommitDetails(projectId, hash),
     [],
   );
 
@@ -231,6 +238,7 @@ export function useProjects() {
     updateProject,
     addFeature,
     analyzeProjectFeatures,
+    getCommitDetails,
     acceptFeatureSuggestions,
     updateFeatureStatus,
     addProjectTask,
