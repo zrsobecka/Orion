@@ -35,13 +35,14 @@ Success means a builder can resume work on any application without opening sever
 - Priority horizon: now, next, or later.
 - Git telemetry: current branch, local branches, recent commits, changed-file count, and upstream divergence.
 - Manual refresh and actionable repository errors.
+- Evidence-backed repository feature proposals through local LM Studio, accepted explicitly by the builder.
 
 ## Explicit non-goals for MVP
 
 - GitHub issues, pull requests, or authentication.
 - Automatic code changes or autonomous agents.
 - Full project-management suite with sprints, estimates, and team assignment.
-- AI asserting that a feature works without verifiable evidence.
+- AI asserting that a feature works without repository evidence or user confirmation.
 - Automatic task recommendations or autonomous prioritization.
 - Cloud sync or collaboration.
 
@@ -50,7 +51,7 @@ Success means a builder can resume work on any application without opening sever
 1. Evidence links between a feature and commits/tests.
 2. Expand the visual mission map from current project facts.
 3. Automatic scan of selected parent directories.
-4. Local AI project analyst that proposes changes for confirmation.
+4. Local AI evaluation of the whole application overview and user flow.
 5. GitHub enrichment for issues and pull requests.
 
 These stages expand the same core model instead of creating parallel workflows.

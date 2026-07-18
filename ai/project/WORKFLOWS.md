@@ -34,6 +34,11 @@ Run `scripts\Build-App.ps1`. Every release uses a unique `%LOCALAPPDATA%\Orion\b
 
 After every check, package copy, and hash calculation succeeds, the script removes that release target and `frontend\dist`. If any step fails, both are retained and the script prints the release-target path for debugging. It never removes the reusable development cache or an unexpected directory. Release output is no longer duplicated under `artifacts\`.
 
+If the command runner times out during `Build-App.ps1`, do not start a second build immediately.
+First check whether the exact Tauri/Cargo process and newest `release-*` target are still advancing;
+the child build can outlive the runner. Let it finish, then verify hashes before manually copying or
+cleaning only that exact release target if the wrapper could not complete its final steps.
+
 Create or refresh the desktop shortcut only after a successful build:
 
 ```powershell

@@ -81,9 +81,11 @@ export default function App() {
           {showCockpit ? (
             <ProjectCockpit
               snapshot={workspace.selectedProject!}
+              onAcceptFeatureSuggestions={workspace.acceptFeatureSuggestions}
               onAddFeature={workspace.addFeature}
               onAddProjectTask={workspace.addProjectTask}
               onBack={workspace.showOverview}
+              onAnalyzeFeatures={workspace.analyzeProjectFeatures}
               onRefresh={workspace.refresh}
               onRemoveProject={workspace.removeProject}
               onRemoveProjectTask={workspace.removeProjectTask}

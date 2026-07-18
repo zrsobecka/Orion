@@ -2,9 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import type {
+  AcceptFeatureSuggestionsInput,
   AddFeatureInput,
   AddProjectTaskInput,
   Dashboard,
+  FeatureAnalysisResult,
   FeatureStatus,
   ProjectSnapshot,
   UpdateProjectInput,
@@ -67,6 +69,50 @@ export const desktopRuntime = {
       createdAt: now,
       updatedAt: now,
     });
+    return structuredClone(snapshot);
+  },
+
+  async analyzeProjectFeatures(projectId: string): Promise<FeatureAnalysisResult> {
+    if (isTauri()) return invoke<FeatureAnalysisResult>("analyze_project_features", { projectId });
+    const snapshot = findBrowserSnapshot(projectId);
+    return {
+      model: "browser-preview/local-model",
+      scannedFiles: 24,
+      truncated: false,
+      suggestions: snapshot.features.some(({ name }) => name === "Repository feature analysis")
+        ? []
+        : [
+            {
+              name: "Repository feature analysis",
+              description: "Scans project evidence and proposes missing capabilities for review.",
+              suggestedStatus: "working",
+              evidence: "src-tauri/src/features/projects/repository_analysis.rs",
+              confidence: 0.94,
+            },
+          ],
+    };
+  },
+
+  async acceptFeatureSuggestions(input: AcceptFeatureSuggestionsInput): Promise<ProjectSnapshot> {
+    if (isTauri()) return invoke<ProjectSnapshot>("accept_feature_suggestions", { input });
+    const snapshot = findBrowserSnapshot(input.projectId);
+    const now = new Date().toISOString();
+    const knownNames = new Set(snapshot.features.map(({ name }) => name.trim().toLowerCase()));
+    for (const suggestion of input.suggestions) {
+      if (knownNames.has(suggestion.name.trim().toLowerCase())) continue;
+      knownNames.add(suggestion.name.trim().toLowerCase());
+      snapshot.features.unshift({
+        id: crypto.randomUUID(),
+        projectId: input.projectId,
+        name: suggestion.name,
+        description: suggestion.description,
+        status: suggestion.suggestedStatus,
+        priority: "later",
+        evidence: suggestion.evidence,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
     return structuredClone(snapshot);
   },
 
