@@ -17,11 +17,6 @@ export function getFeatureCounts(snapshot: ProjectSnapshot) {
   );
 }
 
-export function getCompletionPercent(snapshot: ProjectSnapshot) {
-  if (snapshot.features.length === 0) return 0;
-  return Math.round((getFeatureCounts(snapshot).working / snapshot.features.length) * 100);
-}
-
 export function getTaskCompletionPercent(snapshot: ProjectSnapshot) {
   const activeFocus = snapshot.focuses.find((focus) => focus.status === "active");
   if (!activeFocus) return 0;

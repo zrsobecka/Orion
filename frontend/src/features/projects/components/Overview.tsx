@@ -9,12 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import {
-  formatRelativeTime,
-  getCompletionPercent,
-  getDashboardMetrics,
-  getFeatureCounts,
-} from "../projectModel";
+import { formatRelativeTime, getDashboardMetrics, getFeatureCounts } from "../projectModel";
 import type { ProjectSnapshot } from "../types";
 
 interface OverviewProps {
@@ -130,7 +125,6 @@ function MetricCard({
 function ProjectCard({ snapshot, onOpen }: { snapshot: ProjectSnapshot; onOpen: () => void }) {
   const { project, git } = snapshot;
   const counts = getFeatureCounts(snapshot);
-  const completion = getCompletionPercent(snapshot);
   const lastCommit = git.commits[0];
 
   return (
@@ -152,11 +146,28 @@ function ProjectCard({ snapshot, onOpen }: { snapshot: ProjectSnapshot; onOpen: 
       </div>
       <div className="progress-row">
         <div>
-          <span>Feature health</span>
-          <strong>{completion}%</strong>
+          <span>Feature map</span>
+          <strong>
+            {snapshot.features.length === 0
+              ? "Not mapped"
+              : `${counts.working}/${snapshot.features.length} working`}
+          </strong>
         </div>
-        <div className="progress-track">
-          <span style={{ width: `${completion}%` }} />
+        <div
+          aria-label={`${snapshot.features.length} feature status segments`}
+          className="progress-track feature-status-track"
+        >
+          {snapshot.features.length === 0 ? (
+            <span className="feature-status-track__empty" />
+          ) : (
+            snapshot.features.map((feature) => (
+              <span
+                key={feature.id}
+                className={`feature-status-track__segment feature-status-track__segment--${feature.status}`}
+                title={`${feature.name}: ${feature.status.replace("_", " ")}`}
+              />
+            ))
+          )}
         </div>
         <small>
           {counts.working} working · {counts.in_progress} in progress · {counts.blocked} blocked

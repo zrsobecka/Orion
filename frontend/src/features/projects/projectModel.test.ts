@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  formatRelativeTime,
-  getCompletionPercent,
-  getDashboardMetrics,
-  getTaskCompletionPercent,
-} from "./projectModel";
+import { formatRelativeTime, getDashboardMetrics, getTaskCompletionPercent } from "./projectModel";
 import type { ProjectSnapshot } from "./types";
 
 const snapshot = (overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot => ({
@@ -69,11 +64,6 @@ const snapshot = (overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot => 
 });
 
 describe("project projections", () => {
-  it("calculates working-feature completion", () => {
-    expect(getCompletionPercent(snapshot())).toBe(50);
-    expect(getCompletionPercent(snapshot({ features: [] }))).toBe(0);
-  });
-
   it("calculates current-focus completion from project tasks", () => {
     const tasks = [
       {

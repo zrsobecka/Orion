@@ -1138,6 +1138,41 @@ h3 {
   box-shadow: 0 0 10px rgba(24, 213, 245, 0.45);
 }
 
+.feature-status-track {
+  display: flex;
+  gap: 3px;
+  height: 7px;
+  overflow: visible;
+  background: transparent;
+}
+
+.feature-status-track > span {
+  position: static;
+  width: auto !important;
+  min-width: 0;
+  height: 100%;
+  flex: 1;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.feature-status-track__segment--working {
+  background: var(--green) !important;
+}
+
+.feature-status-track__segment--in_progress {
+  background: var(--cyan) !important;
+}
+
+.feature-status-track__segment--planned,
+.feature-status-track__empty {
+  background: #44596d !important;
+}
+
+.feature-status-track__segment--blocked {
+  background: var(--red) !important;
+}
+
 .progress-row small {
   display: block;
   margin-top: 6px;
