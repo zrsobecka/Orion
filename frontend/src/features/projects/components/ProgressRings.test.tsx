@@ -91,6 +91,24 @@ describe("ProgressRings", () => {
     expect(container.querySelector(".progress-rings__feature--blocked")).toBeInTheDocument();
   });
 
+  it("presents feature evidence as progress toward one main goal", () => {
+    render(
+      <ProgressRings
+        features={features}
+        focuses={focuses}
+        tasks={tasks}
+        selectedFocusId="focus-1"
+        selected="features"
+        onSelect={vi.fn()}
+        onSelectFocus={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Main goal")).toBeInTheDocument();
+    expect(screen.getByText("1/2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show main goal progress" })).toBePressed();
+  });
+
   it("lets the user choose which ring explains the project state", async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();

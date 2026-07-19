@@ -126,6 +126,10 @@ function ProjectCard({ snapshot, onOpen }: { snapshot: ProjectSnapshot; onOpen: 
   const { project, git } = snapshot;
   const counts = getFeatureCounts(snapshot);
   const lastCommit = git.commits[0];
+  const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
+  const nextOpenTask = activeFocus
+    ? snapshot.tasks.find((task) => task.focusId === activeFocus.id && !task.completed)
+    : null;
 
   return (
     <button className="project-card" onClick={onOpen}>
@@ -141,8 +145,11 @@ function ProjectCard({ snapshot, onOpen }: { snapshot: ProjectSnapshot; onOpen: 
         <p>{project.goal || "Add a project goal to make the destination explicit."}</p>
       </div>
       <div className="project-card__next">
-        <span>Next action</span>
-        <strong>{project.nextAction || "Define the next concrete step"}</strong>
+        <span>{activeFocus ? "Active focus" : "Next action"}</span>
+        <strong>
+          {activeFocus?.title || project.nextAction || "Define the next concrete step"}
+        </strong>
+        {nextOpenTask && <small>Next move · {nextOpenTask.title}</small>}
       </div>
       <div className="progress-row">
         <div>

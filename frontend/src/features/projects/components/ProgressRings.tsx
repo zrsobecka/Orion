@@ -46,6 +46,7 @@ export function ProgressRings({
     ? tasks.filter((task) => task.focusId === selectedFocus.id)
     : [];
   const completedTasks = selectedFocusTasks.filter((task) => task.completed).length;
+  const workingFeatures = features.filter((feature) => feature.status === "working").length;
   const focusPercent =
     selectedFocusTasks.length === 0
       ? 0
@@ -104,7 +105,7 @@ export function ProgressRings({
         })}
       </svg>
       <button
-        aria-label="Show feature progress"
+        aria-label="Show main goal progress"
         aria-pressed={selected === "features"}
         className="progress-rings__hit progress-rings__hit--outer"
         onClick={() => onSelect("features")}
@@ -132,12 +133,14 @@ export function ProgressRings({
         <Orbit size={23} />
         <small>
           {selected === "features"
-            ? "Features"
+            ? "Main goal"
             : selectedFocus?.status === "active"
               ? "Active focus"
               : "Previous focus"}
         </small>
-        <strong>{selected === "features" ? features.length : `${focusPercent}%`}</strong>
+        <strong>
+          {selected === "features" ? `${workingFeatures}/${features.length}` : `${focusPercent}%`}
+        </strong>
       </div>
     </div>
   );

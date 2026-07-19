@@ -35,6 +35,8 @@ import type {
   UpdateProjectInput,
 } from "../types";
 import { FeatureSuggestionsModal } from "./FeatureSuggestionsModal";
+import { MissionPath } from "./MissionPath";
+import { ProjectPlanet } from "./ProjectPlanet";
 import { ProjectTasks } from "./ProjectTasks";
 import { ProgressRings, type ProgressRingSelection } from "./ProgressRings";
 import { CommitHistory } from "./CommitHistory";
@@ -176,21 +178,6 @@ export function ProjectCockpit({
           snapshot={snapshot}
           workingFeatureCount={counts.working}
         />
-        <ProjectTasks
-          features={snapshot.features}
-          focuses={snapshot.focuses}
-          projectId={snapshot.project.id}
-          selectedFocusId={selectedFocusId}
-          tasks={snapshot.tasks}
-          onAdd={onAddProjectTask}
-          onRemove={onRemoveProjectTask}
-          onSetCompleted={onSetProjectTaskCompleted}
-          onSelectFocus={(focusId) => {
-            setSelectedFocusId(focusId);
-            setSelectedRing("focus");
-          }}
-          onStartFocus={onStartProjectFocus}
-        />
       </div>
 
       <div className="cockpit-grid">
@@ -289,6 +276,21 @@ export function ProjectCockpit({
         </main>
 
         <aside className="cockpit-telemetry">
+          <ProjectTasks
+            features={snapshot.features}
+            focuses={snapshot.focuses}
+            projectId={snapshot.project.id}
+            selectedFocusId={selectedFocusId}
+            tasks={snapshot.tasks}
+            onAdd={onAddProjectTask}
+            onRemove={onRemoveProjectTask}
+            onSetCompleted={onSetProjectTaskCompleted}
+            onSelectFocus={(focusId) => {
+              setSelectedFocusId(focusId);
+              setSelectedRing("focus");
+            }}
+            onStartFocus={onStartProjectFocus}
+          />
           <GitTelemetry
             snapshot={snapshot}
             onRefresh={onRefresh}
@@ -391,102 +393,128 @@ function MissionOrbit({
         </span>
       </header>
 
-      <div className="mission-map__canvas">
-        <svg aria-hidden="true" className="mission-map__orbits" viewBox="0 0 620 340">
-          <defs>
-            <linearGradient id="orbit-energy" x1="0" x2="1">
-              <stop offset="0" stopColor="currentColor" stopOpacity="0" />
-              <stop offset="0.5" stopColor="currentColor" stopOpacity="1" />
-              <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <ellipse className="orbit-line orbit-line--one" cx="310" cy="170" rx="190" ry="82" />
-          <ellipse
-            className="orbit-line orbit-line--two"
-            cx="310"
-            cy="170"
-            rx="218"
-            ry="112"
-            transform="rotate(-22 310 170)"
-          />
-          <ellipse
-            className="orbit-line orbit-line--three"
-            cx="310"
-            cy="170"
-            rx="226"
-            ry="92"
-            transform="rotate(30 310 170)"
-          />
-          <path
-            className="orbit-energy"
-            d="M84 242 C180 55 440 30 552 184 C598 246 510 319 370 286"
-            stroke="url(#orbit-energy)"
-          />
-        </svg>
+      <div className="mission-map__top">
+        <div className="mission-map__planet-stage">
+          <svg aria-hidden="true" className="mission-map__orbits" viewBox="0 0 620 340">
+            <defs>
+              <linearGradient id="orbit-energy" x1="0" x2="1">
+                <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+                <stop offset="0.5" stopColor="currentColor" stopOpacity="1" />
+                <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <ellipse className="orbit-line orbit-line--one" cx="310" cy="170" rx="190" ry="82" />
+            <ellipse
+              className="orbit-line orbit-line--two"
+              cx="310"
+              cy="170"
+              rx="218"
+              ry="112"
+              transform="rotate(-22 310 170)"
+            />
+            <ellipse
+              className="orbit-line orbit-line--three"
+              cx="310"
+              cy="170"
+              rx="226"
+              ry="92"
+              transform="rotate(30 310 170)"
+            />
+            <path
+              className="orbit-energy"
+              d="M84 242 C180 55 440 30 552 184 C598 246 510 319 370 286"
+              stroke="url(#orbit-energy)"
+            />
+          </svg>
 
-        <ProgressRings
-          features={snapshot.features}
-          focuses={snapshot.focuses}
-          tasks={snapshot.tasks}
-          selectedFocusId={selectedFocus?.id ?? null}
-          selected={selectedRing}
-          onSelect={onSelectRing}
-          onSelectFocus={onSelectFocus}
-        />
+          <ProjectPlanet projectName={snapshot.project.name} />
 
-        <div className="orbit-node orbit-node--tasks">
-          <span className="orbit-node__icon">
-            <Target size={15} />
-          </span>
-          <div>
-            <small>Open tasks</small>
-            <strong>{openTaskCount.toString().padStart(2, "0")}</strong>
+          <div className="orbit-node orbit-node--tasks">
+            <span className="orbit-node__icon">
+              <Target size={15} />
+            </span>
+            <div>
+              <small>Open tasks</small>
+              <strong>{openTaskCount.toString().padStart(2, "0")}</strong>
+            </div>
+          </div>
+          <div className="orbit-node orbit-node--features">
+            <span className="orbit-node__icon">
+              <Radio size={15} />
+            </span>
+            <div>
+              <small>Working features</small>
+              <strong>{workingFeatureCount.toString().padStart(2, "0")}</strong>
+            </div>
+          </div>
+          <div className="orbit-node orbit-node--git">
+            <span className="orbit-node__icon">
+              <Satellite size={15} />
+            </span>
+            <div>
+              <small>Active branch</small>
+              <strong>{snapshot.git.available ? snapshot.git.currentBranch : "Offline"}</strong>
+            </div>
           </div>
         </div>
-        <div className="orbit-node orbit-node--features">
-          <span className="orbit-node__icon">
-            <Radio size={15} />
-          </span>
-          <div>
-            <small>Working features</small>
-            <strong>{workingFeatureCount.toString().padStart(2, "0")}</strong>
+
+        <aside className="mission-progress" aria-label="Project goal and focus progress">
+          <header className="mission-progress__header">
+            <div>
+              <p className="eyebrow">Goal and focuses</p>
+              <h3>Progress orbit</h3>
+            </div>
+            <small>
+              {snapshot.focuses.length} focus {snapshot.focuses.length === 1 ? "ring" : "rings"}
+            </small>
+          </header>
+          <div className="mission-progress__rings">
+            <ProgressRings
+              features={snapshot.features}
+              focuses={snapshot.focuses}
+              tasks={snapshot.tasks}
+              selectedFocusId={selectedFocus?.id ?? null}
+              selected={selectedRing}
+              onSelect={onSelectRing}
+              onSelectFocus={onSelectFocus}
+            />
           </div>
-        </div>
-        <div className="orbit-node orbit-node--git">
-          <span className="orbit-node__icon">
-            <Satellite size={15} />
-          </span>
-          <div>
-            <small>Active branch</small>
-            <strong>{snapshot.git.available ? snapshot.git.currentBranch : "Offline"}</strong>
+          <div className="mission-map__brief">
+            <div>
+              <span>
+                {selectedRing === "features"
+                  ? "Main project goal"
+                  : selectedFocus?.status === "active"
+                    ? "Active focus"
+                    : "Previous focus"}
+              </span>
+              <strong>
+                {selectedRing === "features"
+                  ? snapshot.project.goal || "Add what this application should achieve."
+                  : selectedFocus?.title || "Start a focus to define the current outcome."}
+              </strong>
+            </div>
+            <div>
+              <span>{selectedRing === "features" ? "Feature evidence" : "Focus progress"}</span>
+              <strong>
+                {selectedRing === "features"
+                  ? `${snapshot.features.length} segments · ${workingFeatureCount} working · ${snapshot.features.filter((feature) => feature.status === "blocked").length} blocked`
+                  : `${completedFocusTasks} of ${focusTasks.length} tasks complete`}
+              </strong>
+            </div>
           </div>
-        </div>
+        </aside>
       </div>
 
-      <div className="mission-map__brief">
-        <div>
-          <span>
-            {selectedRing === "features"
-              ? "Big project goal"
-              : selectedFocus?.status === "active"
-                ? "Active focus"
-                : "Previous focus"}
-          </span>
-          <strong>
-            {selectedRing === "features"
-              ? snapshot.project.goal || "Add what this application should achieve."
-              : selectedFocus?.title || "Start a focus to define the current outcome."}
-          </strong>
-        </div>
-        <div>
-          <span>{selectedRing === "features" ? "Feature evidence" : "Focus progress"}</span>
-          <strong>
-            {selectedRing === "features"
-              ? `${snapshot.features.length} segments · ${workingFeatureCount} working · ${snapshot.features.filter((feature) => feature.status === "blocked").length} blocked`
-              : `${completedFocusTasks} of ${focusTasks.length} tasks complete`}
-          </strong>
-        </div>
-      </div>
+      <MissionPath
+        features={snapshot.features}
+        focuses={snapshot.focuses}
+        selectedFocusId={selectedFocus?.id ?? null}
+        onSelectFocus={(focusId) => {
+          onSelectFocus(focusId);
+          onSelectRing("focus");
+        }}
+      />
     </section>
   );
 }
