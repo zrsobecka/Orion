@@ -2446,17 +2446,33 @@ h3 {
 
 .cockpit-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(310px, 0.75fr);
+  grid-template-areas:
+    "evidence tasks"
+    "evidence features";
+  grid-template-columns: minmax(0, 1.65fr) minmax(340px, 0.72fr);
   gap: 14px;
   align-items: start;
   margin-top: 14px;
 }
 
-.cockpit-main,
-.cockpit-telemetry {
+.cockpit-evidence,
+.cockpit-task-area,
+.cockpit-feature-area {
   display: grid;
   min-width: 0;
   gap: 14px;
+}
+
+.cockpit-evidence {
+  grid-area: evidence;
+}
+
+.cockpit-task-area {
+  grid-area: tasks;
+}
+
+.cockpit-feature-area {
+  grid-area: features;
 }
 
 .panel {
@@ -2522,6 +2538,53 @@ h3 {
 
 .feature-summary__item--blocked {
   --summary-color: var(--red);
+}
+
+.feature-panel--compact .panel__header {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature-panel--compact .panel__header-actions {
+  width: 100%;
+}
+
+.feature-panel--compact .panel__header-actions .button {
+  min-width: 0;
+  flex: 1;
+}
+
+.feature-panel--compact .feature-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.feature-panel--compact .feature-row {
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.feature-panel--compact .status-select {
+  grid-column: 2;
+}
+
+.feature-panel--compact .feature-row__title {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.feature-panel--compact .feature-row__content p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.feature-panel--compact .feature-row__content small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .feature-list {
@@ -2701,6 +2764,118 @@ h3 {
   background: #081321;
   border: 1px solid #1b344e;
   border-radius: var(--radius-md);
+}
+
+.repository-context {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.45fr) repeat(2, minmax(125px, 0.65fr)) auto;
+  gap: 10px;
+  align-items: stretch;
+  padding: 14px 15px;
+}
+
+.repository-context .branch-hero {
+  min-width: 0;
+  margin: 0;
+}
+
+.repository-stat {
+  display: flex;
+  min-width: 0;
+  padding: 11px 13px;
+  flex-direction: column;
+  justify-content: center;
+  background: #081321;
+  border: 1px solid #1b344e;
+  border-radius: var(--radius-md);
+}
+
+.repository-stat > span,
+.repository-stat small {
+  color: var(--text-muted);
+  font-size: 0.56rem;
+}
+
+.repository-stat > span {
+  text-transform: uppercase;
+}
+
+.repository-stat strong {
+  margin: 4px 0 3px;
+  color: #d7e9f7;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.repository-stat strong span {
+  color: #55718a;
+}
+
+.branch-disclosure {
+  min-width: 136px;
+}
+
+.branch-disclosure summary {
+  display: flex;
+  height: 100%;
+  min-height: 62px;
+  padding: 0 14px;
+  align-items: center;
+  justify-content: center;
+  color: #9db2c7;
+  font-size: 0.64rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: #081321;
+  border: 1px solid #1b344e;
+  border-radius: var(--radius-md);
+  list-style: none;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.branch-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.branch-disclosure__open {
+  display: none;
+}
+
+.branch-disclosure[open] .branch-disclosure__closed {
+  display: none;
+}
+
+.branch-disclosure[open] .branch-disclosure__open {
+  display: inline;
+}
+
+.branch-disclosure summary:hover,
+.branch-disclosure summary:focus-visible {
+  color: #d7e9f7;
+  background: #0b1a2b;
+  border-color: #315673;
+}
+
+.branch-disclosure[open] {
+  grid-column: 1 / -1;
+}
+
+.branch-disclosure[open] summary {
+  width: max-content;
+  height: auto;
+  min-height: 34px;
+  margin-left: auto;
+}
+
+.branch-disclosure .branch-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+  margin-top: 10px;
+  padding: 0;
 }
 
 .branch-hero span:not(.signal-icon),
@@ -3513,7 +3688,19 @@ h3 {
   }
 
   .cockpit-grid {
-    grid-template-columns: minmax(0, 1.4fr) 300px;
+    grid-template-columns: minmax(0, 1.4fr) 320px;
+  }
+
+  .repository-context {
+    grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(112px, 0.55fr));
+  }
+
+  .branch-disclosure {
+    grid-column: 1 / -1;
+  }
+
+  .branch-disclosure summary {
+    min-height: 34px;
   }
 
   .mission-map__top {
@@ -3583,6 +3770,10 @@ h3 {
   }
 
   .cockpit-grid {
+    grid-template-areas:
+      "tasks"
+      "evidence"
+      "features";
     grid-template-columns: 1fr;
   }
 
@@ -3620,10 +3811,6 @@ h3 {
 
   .task-list {
     max-height: none;
-  }
-
-  .cockpit-telemetry {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .project-grid {
@@ -3666,8 +3853,20 @@ h3 {
   .metric-grid,
   .mission-strip,
   .mission-map__brief,
-  .cockpit-telemetry,
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .repository-context {
+    grid-template-columns: 1fr;
+  }
+
+  .branch-disclosure,
+  .branch-disclosure[open] {
+    grid-column: auto;
+  }
+
+  .branch-disclosure .branch-list {
     grid-template-columns: 1fr;
   }
 

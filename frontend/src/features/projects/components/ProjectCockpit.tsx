@@ -181,8 +181,36 @@ export function ProjectCockpit({
       </div>
 
       <div className="cockpit-grid">
-        <main className="cockpit-main">
-          <section className="panel feature-panel">
+        <main className="cockpit-evidence">
+          <GitTelemetry
+            snapshot={snapshot}
+            onRefresh={onRefresh}
+            onGetCommitDetails={onGetCommitDetails}
+            onAnalyzeCommit={onAnalyzeCommit}
+            onReviewCommitAnalysis={onReviewCommitAnalysis}
+          />
+        </main>
+
+        <div className="cockpit-task-area">
+          <ProjectTasks
+            features={snapshot.features}
+            focuses={snapshot.focuses}
+            projectId={snapshot.project.id}
+            selectedFocusId={selectedFocusId}
+            tasks={snapshot.tasks}
+            onAdd={onAddProjectTask}
+            onRemove={onRemoveProjectTask}
+            onSetCompleted={onSetProjectTaskCompleted}
+            onSelectFocus={(focusId) => {
+              setSelectedFocusId(focusId);
+              setSelectedRing("focus");
+            }}
+            onStartFocus={onStartProjectFocus}
+          />
+        </div>
+
+        <aside className="cockpit-feature-area" aria-label="Project capabilities">
+          <section className="panel feature-panel feature-panel--compact">
             <div className="panel__header">
               <div>
                 <p className="eyebrow">Capability map</p>
@@ -273,31 +301,6 @@ export function ProjectCockpit({
               </div>
             )}
           </section>
-        </main>
-
-        <aside className="cockpit-telemetry">
-          <ProjectTasks
-            features={snapshot.features}
-            focuses={snapshot.focuses}
-            projectId={snapshot.project.id}
-            selectedFocusId={selectedFocusId}
-            tasks={snapshot.tasks}
-            onAdd={onAddProjectTask}
-            onRemove={onRemoveProjectTask}
-            onSetCompleted={onSetProjectTaskCompleted}
-            onSelectFocus={(focusId) => {
-              setSelectedFocusId(focusId);
-              setSelectedRing("focus");
-            }}
-            onStartFocus={onStartProjectFocus}
-          />
-          <GitTelemetry
-            snapshot={snapshot}
-            onRefresh={onRefresh}
-            onGetCommitDetails={onGetCommitDetails}
-            onAnalyzeCommit={onAnalyzeCommit}
-            onReviewCommitAnalysis={onReviewCommitAnalysis}
-          />
         </aside>
       </div>
 
@@ -552,7 +555,7 @@ function GitTelemetry({
   const { git } = snapshot;
   if (!git.available) {
     return (
-      <section className="panel telemetry-panel">
+      <section className="panel telemetry-panel repository-context-panel">
         <div className="panel__header">
           <div>
             <p className="eyebrow">Repository signal</p>
@@ -572,7 +575,7 @@ function GitTelemetry({
 
   return (
     <>
-      <section className="panel telemetry-panel">
+      <section className="panel telemetry-panel repository-context-panel">
         <div className="panel__header panel__header--compact">
           <div>
             <p className="eyebrow">Repository signal</p>
@@ -582,29 +585,49 @@ function GitTelemetry({
             {git.isDirty ? `${git.modifiedFiles} changed` : "Clean"}
           </span>
         </div>
-        <div className="branch-hero">
-          <span className="signal-icon signal-icon--cyan">
-            <GitBranch size={18} />
-          </span>
-          <div>
-            <span>Current branch</span>
-            <strong>{git.currentBranch}</strong>
-            <small>
-              {git.upstream || "No upstream"} · ↑{git.ahead} ↓{git.behind}
-            </small>
-          </div>
-        </div>
-        <div className="branch-list">
-          {git.branches.slice(0, 4).map((branch) => (
-            <div key={branch.name} className={branch.isCurrent ? "is-current" : ""}>
-              <span className="branch-list__line" />
-              <div>
-                <strong>{branch.name}</strong>
-                <small>{branch.shortHash}</small>
-              </div>
-              <time>{formatRelativeTime(branch.updatedAt)}</time>
+        <div className="repository-context">
+          <div className="branch-hero">
+            <span className="signal-icon signal-icon--cyan">
+              <GitBranch size={18} />
+            </span>
+            <div>
+              <span>Current branch</span>
+              <strong>{git.currentBranch}</strong>
+              <small>{git.upstream || "No upstream"}</small>
             </div>
-          ))}
+          </div>
+          <div className="repository-stat">
+            <span>Sync</span>
+            <strong>
+              ↑{git.ahead} <span aria-hidden="true">·</span> ↓{git.behind}
+            </strong>
+            <small>Ahead / behind</small>
+          </div>
+          <div className="repository-stat">
+            <span>Working tree</span>
+            <strong>{git.isDirty ? `${git.modifiedFiles} changed` : "Clean"}</strong>
+            <small>{git.isDirty ? "Local work not committed" : "No local changes"}</small>
+          </div>
+          <details className="branch-disclosure">
+            <summary>
+              <span className="branch-disclosure__closed">
+                Show branches ({git.branches.length})
+              </span>
+              <span className="branch-disclosure__open">Hide branches</span>
+            </summary>
+            <div className="branch-list">
+              {git.branches.slice(0, 4).map((branch) => (
+                <div key={branch.name} className={branch.isCurrent ? "is-current" : ""}>
+                  <span className="branch-list__line" />
+                  <div>
+                    <strong>{branch.name}</strong>
+                    <small>{branch.shortHash}</small>
+                  </div>
+                  <time>{formatRelativeTime(branch.updatedAt)}</time>
+                </div>
+              ))}
+            </div>
+          </details>
         </div>
       </section>
 
