@@ -150,6 +150,55 @@ describe("ProgressRings", () => {
     expect(onSelectFocus).toHaveBeenCalledWith("focus-old");
   });
 
+  it("gives sequential focuses distinct colors and marks the selected ring without relying on color", () => {
+    const { container } = render(
+      <ProgressRings
+        features={features}
+        focuses={focuses}
+        tasks={tasks}
+        selectedFocusId="focus-1"
+        selected="focus"
+        onSelect={vi.fn()}
+        onSelectFocus={vi.fn()}
+      />,
+    );
+
+    const focusGroups = [...container.querySelectorAll("[data-focus-tone]")];
+    const selectedGroup = container.querySelector("[data-focus-tone].is-selected");
+
+    expect(focusGroups).toHaveLength(2);
+    expect(new Set(focusGroups.map((group) => group.getAttribute("data-focus-tone"))).size).toBe(2);
+    expect(selectedGroup).toHaveClass("is-current-focus");
+    expect(
+      screen.getByRole("button", { name: "Show active focus Ship the cockpit" }),
+    ).toBePressed();
+  });
+
+  it("adds one inner orbit for every visible focus", () => {
+    const extraFocuses = Array.from({ length: 3 }, (_, index): ProjectFocus => ({
+      ...focuses[1],
+      id: `focus-extra-${index}`,
+      title: `Previous focus ${index + 1}`,
+      startedAt: `2026-07-${String(16 - index).padStart(2, "0")}T10:00:00Z`,
+    }));
+    const allFocuses = [...focuses, ...extraFocuses];
+    const { container } = render(
+      <ProgressRings
+        features={features}
+        focuses={allFocuses}
+        tasks={tasks}
+        selectedFocusId="focus-1"
+        selected="focus"
+        onSelect={vi.fn()}
+        onSelectFocus={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelectorAll(".progress-rings__focus-track")).toHaveLength(
+      allFocuses.length,
+    );
+  });
+
   it("does not draw a misleading progress marker when a focus is at zero percent", () => {
     const { container } = render(
       <ProgressRings

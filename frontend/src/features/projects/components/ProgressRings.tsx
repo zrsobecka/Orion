@@ -1,4 +1,4 @@
-import { Orbit } from "lucide-react";
+import { useState, type KeyboardEvent } from "react";
 import type { ProjectFeature, ProjectFocus, ProjectTask } from "../types";
 
 export type ProgressRingSelection = "features" | "focus";
@@ -19,6 +19,15 @@ const outerFocusRadius = 74;
 const innerFocusRadius = 38;
 const maxVisibleFocuses = 6;
 const outerCircumference = 2 * Math.PI * outerRadius;
+const focusRingTones = ["green", "cobalt", "violet", "teal", "sky", "indigo"] as const;
+
+type FocusRingTone = (typeof focusRingTones)[number];
+
+function activateRingWithKeyboard(event: KeyboardEvent<SVGCircleElement>, onActivate: () => void) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  onActivate();
+}
 
 export function ProgressRings({
   features,
@@ -29,6 +38,7 @@ export function ProgressRings({
   onSelect,
   onSelectFocus,
 }: ProgressRingsProps) {
+  const [hoveredRing, setHoveredRing] = useState<"features" | string | null>(null);
   const selectedFocus =
     focuses.find((focus) => focus.id === selectedFocusId) ??
     focuses.find((focus) => focus.status === "active") ??
@@ -42,6 +52,8 @@ export function ProgressRings({
     visibleFocuses.length <= 1
       ? 0
       : (outerFocusRadius - innerFocusRadius) / (visibleFocuses.length - 1);
+  const focusHitWidth =
+    visibleFocuses.length <= 1 ? 16 : Math.max(6, Math.min(14, focusSpacing - 1));
   const selectedFocusTasks = selectedFocus
     ? tasks.filter((task) => task.focusId === selectedFocus.id)
     : [];
@@ -53,6 +65,14 @@ export function ProgressRings({
       : Math.round((completedTasks / selectedFocusTasks.length) * 100);
   const segmentLength = features.length === 0 ? 0 : outerCircumference / features.length;
   const segmentGap = Math.min(5, segmentLength * 0.16);
+  const focusToneById = new Map(
+    [...focuses]
+      .sort((left, right) => left.startedAt.localeCompare(right.startedAt))
+      .map((focus, index) => [
+        focus.id,
+        focusRingTones[index % focusRingTones.length] as FocusRingTone,
+      ]),
+  );
 
   const focusRings = visibleFocuses.map((focus, index) => {
     const radius =
@@ -62,14 +82,19 @@ export function ProgressRings({
     const focusTasks = tasks.filter((task) => task.focusId === focus.id);
     const completed = focusTasks.filter((task) => task.completed).length;
     const percent = focusTasks.length === 0 ? 0 : Math.round((completed / focusTasks.length) * 100);
-    return { focus, percent, radius };
+    return {
+      focus,
+      percent,
+      radius,
+      tone: focusToneById.get(focus.id) ?? focusRingTones[0],
+    };
   });
 
   return (
     <div
-      className={`progress-rings progress-rings--${selected} ${focusRings.length > 1 ? "progress-rings--multiple" : ""}`}
+      className={`progress-rings progress-rings--${selected} ${hoveredRing === "features" ? "is-features-hovered" : ""} ${focusRings.length > 1 ? "progress-rings--multiple" : ""}`}
     >
-      <svg aria-hidden="true" viewBox="0 0 220 220">
+      <svg aria-label="Project goal and focus progress rings" role="group" viewBox="0 0 220 220">
         <circle className="progress-rings__track" cx="110" cy="110" r={outerRadius} />
         {features.map((feature, index) => (
           <circle
@@ -82,11 +107,17 @@ export function ProgressRings({
             strokeDashoffset={-index * segmentLength}
           />
         ))}
-        {[...focusRings].reverse().map(({ focus, percent, radius }) => {
+        {[...focusRings].reverse().map(({ focus, percent, radius, tone }) => {
           const circumference = 2 * Math.PI * radius;
           const selectedClass = focus.id === selectedFocus?.id ? "is-selected" : "";
+          const currentClass = focus.status === "active" ? "is-current-focus" : "";
+          const hoveredClass = focus.id === hoveredRing ? "is-hovered" : "";
           return (
-            <g className={selectedClass} key={focus.id}>
+            <g
+              className={`${selectedClass} ${currentClass} ${hoveredClass}`}
+              data-focus-tone={tone}
+              key={focus.id}
+            >
               <circle
                 className={`progress-rings__focus-track progress-rings__focus-track--${focus.status}`}
                 cx="110"
@@ -102,37 +133,58 @@ export function ProgressRings({
                   strokeDasharray={`${(percent / 100) * circumference} ${circumference}`}
                 />
               )}
+              <circle
+                aria-label={`Show ${focus.status === "active" ? "active" : "previous"} focus ${focus.title}`}
+                aria-pressed={selected === "focus" && selectedFocus?.id === focus.id}
+                className="progress-rings__ring-hit progress-rings__ring-hit--focus"
+                cx="110"
+                cy="110"
+                data-focus-id={focus.id}
+                onBlur={() => setHoveredRing(null)}
+                onClick={() => {
+                  onSelectFocus(focus.id);
+                  onSelect("focus");
+                }}
+                onFocus={() => setHoveredRing(focus.id)}
+                onKeyDown={(event) =>
+                  activateRingWithKeyboard(event, () => {
+                    onSelectFocus(focus.id);
+                    onSelect("focus");
+                  })
+                }
+                onMouseEnter={() => setHoveredRing(focus.id)}
+                onMouseLeave={() => setHoveredRing(null)}
+                r={radius}
+                role="button"
+                strokeWidth={focusHitWidth}
+                tabIndex={0}
+              >
+                <title>{`${focus.title} · ${percent}% complete`}</title>
+              </circle>
             </g>
           );
         })}
+        <circle
+          aria-label="Show main goal progress"
+          aria-pressed={selected === "features"}
+          className="progress-rings__ring-hit progress-rings__ring-hit--outer"
+          cx="110"
+          cy="110"
+          onBlur={() => setHoveredRing(null)}
+          onClick={() => onSelect("features")}
+          onFocus={() => setHoveredRing("features")}
+          onKeyDown={(event) => activateRingWithKeyboard(event, () => onSelect("features"))}
+          onMouseEnter={() => setHoveredRing("features")}
+          onMouseLeave={() => setHoveredRing(null)}
+          r={outerRadius}
+          role="button"
+          strokeWidth="16"
+          tabIndex={0}
+        >
+          <title>Show main goal progress</title>
+        </circle>
       </svg>
-      <button
-        aria-label="Show main goal progress"
-        aria-pressed={selected === "features"}
-        className="progress-rings__hit progress-rings__hit--outer"
-        onClick={() => onSelect("features")}
-        type="button"
-      />
-      {focusRings.map(({ focus, radius }, index) => (
-        <button
-          key={focus.id}
-          aria-label={`Show ${focus.status === "active" ? "active" : "previous"} focus ${focus.title}`}
-          aria-pressed={selected === "focus" && selectedFocus?.id === focus.id}
-          className="progress-rings__hit progress-rings__hit--focus"
-          onClick={() => {
-            onSelectFocus(focus.id);
-            onSelect("focus");
-          }}
-          style={{
-            width: radius * 2 + 10,
-            height: radius * 2 + 10,
-            zIndex: focusRings.length - index + 1,
-          }}
-          type="button"
-        />
-      ))}
       <div className="progress-rings__core">
-        <Orbit size={23} />
         <small>
           {selected === "features"
             ? "Main goal"

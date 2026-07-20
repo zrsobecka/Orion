@@ -35,6 +35,12 @@
   --blue: var(--brand-blue);
   --violet: #8d7dff;
   --green: #49dfa2;
+  --focus-ring-green: #49d9a6;
+  --focus-ring-teal: #46cdbd;
+  --focus-ring-sky: #4eadd5;
+  --focus-ring-cobalt: var(--brand-blue);
+  --focus-ring-indigo: #6d72e5;
+  --focus-ring-violet: #9475e8;
   --amber: #ffc562;
   --red: #ff7189;
   --shadow-low: 0 10px 28px rgba(0, 4, 14, 0.22);
@@ -1478,55 +1484,102 @@ h3 {
   position: absolute;
   top: 50%;
   left: 50%;
-  display: flex;
-  width: 148px;
-  height: 148px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  background: radial-gradient(
-    circle,
-    rgba(24, 213, 245, 0.2),
-    rgba(9, 25, 48, 0.94) 58%,
-    rgba(4, 9, 21, 0.96)
-  );
-  border: 1px solid rgba(95, 227, 255, 0.48);
-  border-radius: 50%;
-  box-shadow:
-    0 0 26px rgba(24, 213, 245, 0.17),
-    0 0 90px rgba(24, 213, 245, 0.12),
-    inset 0 0 35px rgba(24, 213, 245, 0.09);
+  z-index: 2;
+  display: grid;
+  width: 220px;
+  height: 220px;
+  place-items: center;
   transform: translate(-50%, -50%);
+}
+
+.mission-core::before {
+  position: absolute;
+  inset: 28px;
+  content: "";
+  background: rgba(74, 128, 216, 0.28);
+  border-radius: 50%;
+  filter: blur(32px);
 }
 
 .mission-core__ring {
   position: absolute;
-  border: 1px dashed rgba(77, 218, 249, 0.35);
   border-radius: 50%;
 }
 
 .mission-core__ring--outer {
-  inset: -18px;
-  animation: core-spin 14s linear infinite;
+  inset: 12px;
+  padding: 10px;
+  background: conic-gradient(
+    from -90deg,
+    #73a9c7 0deg 174deg,
+    #78dea9 178deg 352deg,
+    #73a9c7 356deg 360deg
+  );
+  box-shadow:
+    0 0 22px rgba(77, 127, 216, 0.22),
+    0 0 54px rgba(73, 223, 162, 0.1);
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: core-spin 32s linear infinite;
 }
 
 .mission-core__ring--inner {
-  inset: -8px;
-  border-color: rgba(143, 126, 255, 0.32);
-  animation: core-spin 9s linear infinite reverse;
+  inset: 40px;
+  border: 8px solid rgba(92, 88, 180, 0.55);
+  box-shadow:
+    0 0 18px rgba(112, 91, 218, 0.2),
+    inset 0 0 20px rgba(77, 127, 216, 0.12);
+}
+
+.mission-core__ring--inner::after {
+  position: absolute;
+  inset: -15px;
+  content: "";
+  border: 1px solid rgba(144, 130, 255, 0.24);
+  border-radius: 50%;
+  animation: core-spin 18s linear infinite reverse;
+}
+
+.mission-core__surface {
+  position: relative;
+  display: grid;
+  width: 104px;
+  height: 104px;
+  overflow: hidden;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+  background:
+    radial-gradient(circle at 38% 30%, rgba(104, 179, 225, 0.25), transparent 27%),
+    radial-gradient(circle, rgba(22, 54, 83, 0.98), rgba(5, 13, 29, 0.99) 72%);
+  border: 1px solid rgba(105, 221, 255, 0.36);
+  border-radius: 50%;
+  box-shadow:
+    0 0 32px rgba(24, 213, 245, 0.16),
+    inset -12px -14px 28px rgba(1, 5, 17, 0.52),
+    inset 8px 8px 22px rgba(77, 127, 216, 0.08);
+}
+
+.mission-core__surface::after {
+  position: absolute;
+  inset: 7px;
+  pointer-events: none;
+  content: "";
+  border: 1px solid rgba(113, 183, 217, 0.1);
+  border-radius: 50%;
 }
 
 .mission-core__icon {
   display: grid;
-  width: 43px;
-  height: 43px;
+  width: 36px;
+  height: 36px;
   color: #bdf8ff;
   place-items: center;
-  background: rgba(14, 171, 205, 0.16);
-  border: 1px solid rgba(95, 227, 255, 0.32);
+  background: rgba(14, 171, 205, 0.12);
+  border: 1px solid rgba(95, 227, 255, 0.25);
   border-radius: 50%;
-  filter: drop-shadow(0 0 8px rgba(24, 213, 245, 0.66));
+  filter: drop-shadow(0 0 7px rgba(24, 213, 245, 0.56));
 }
 
 .mission-core small,
@@ -1539,16 +1592,17 @@ h3 {
 }
 
 .mission-core small {
-  margin-top: 9px;
+  margin-top: 6px;
+  font-size: 0.49rem;
 }
 
 .mission-core strong {
   display: block;
-  max-width: 118px;
-  margin-top: 3px;
+  max-width: 84px;
+  margin-top: 2px;
   overflow: hidden;
   color: #f2fcff;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1627,9 +1681,10 @@ h3 {
   transform-origin: 110px 110px;
   transition:
     opacity 180ms ease,
-    stroke 220ms ease,
+    stroke 180ms ease,
+    stroke-width 180ms ease,
     stroke-dasharray 360ms ease,
-    filter 220ms ease;
+    filter 180ms ease;
 }
 
 .progress-rings__track,
@@ -1664,66 +1719,107 @@ h3 {
 
 .progress-rings__focus-track,
 .progress-rings__focus-value {
-  stroke-width: 6;
+  stroke: var(--focus-ring-color);
+  stroke-width: 5;
 }
 
 .progress-rings__focus-track {
-  stroke: rgba(141, 125, 255, 0.24);
+  opacity: 0.24;
 }
 
 .progress-rings__focus-track--archived {
-  stroke: rgba(82, 105, 126, 0.22);
+  opacity: 0.18;
 }
 
 .progress-rings__focus-value {
-  stroke: #a99fff;
   stroke-linecap: round;
 }
 
 .progress-rings__focus-value--archived {
-  stroke: #60758d;
+  opacity: 0.72;
   filter: none;
 }
 
-.progress-rings g.is-selected .progress-rings__focus-track {
-  stroke: rgba(130, 194, 215, 0.52);
+.progress-rings [data-focus-tone="green"] {
+  --focus-ring-color: var(--focus-ring-green);
 }
 
-.progress-rings--focus g.is-selected .progress-rings__focus-value {
-  stroke: var(--cyan-strong);
+.progress-rings [data-focus-tone="teal"] {
+  --focus-ring-color: var(--focus-ring-teal);
 }
 
-.progress-rings--features .progress-rings__feature {
+.progress-rings [data-focus-tone="sky"] {
+  --focus-ring-color: var(--focus-ring-sky);
+}
+
+.progress-rings [data-focus-tone="cobalt"] {
+  --focus-ring-color: var(--focus-ring-cobalt);
+}
+
+.progress-rings [data-focus-tone="indigo"] {
+  --focus-ring-color: var(--focus-ring-indigo);
+}
+
+.progress-rings [data-focus-tone="violet"] {
+  --focus-ring-color: var(--focus-ring-violet);
+}
+
+.progress-rings g.is-current-focus .progress-rings__focus-track {
+  opacity: 0.46;
+}
+
+.progress-rings--focus g.is-selected .progress-rings__focus-track,
+.progress-rings g.is-hovered .progress-rings__focus-track {
+  stroke-width: 8;
+}
+
+.progress-rings--focus g.is-selected .progress-rings__focus-track {
+  opacity: 0.48;
+}
+
+.progress-rings g.is-hovered .progress-rings__focus-track {
+  opacity: 0.62;
+}
+
+.progress-rings--focus g.is-selected .progress-rings__focus-value,
+.progress-rings g.is-hovered .progress-rings__focus-value {
+  stroke-width: 8;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--focus-ring-color) 72%, transparent));
+}
+
+.progress-rings--features .progress-rings__feature,
+.progress-rings.is-features-hovered .progress-rings__feature {
   opacity: 1;
+  filter: drop-shadow(0 0 4px rgba(77, 127, 216, 0.34));
 }
 
 .progress-rings--focus .progress-rings__feature,
 .progress-rings--features .progress-rings__focus-value,
 .progress-rings--focus g:not(.is-selected) .progress-rings__focus-value {
-  opacity: 0.62;
+  opacity: 0.34;
 }
 
-.progress-rings__hit {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+.progress-rings.is-features-hovered .progress-rings__feature {
+  opacity: 1;
+}
+
+.progress-rings--features .progress-rings__focus-track {
+  opacity: 0.13;
+}
+
+.progress-rings--focus g.is-selected .progress-rings__focus-value,
+.progress-rings g.is-hovered .progress-rings__focus-value {
+  opacity: 1;
+}
+
+.progress-rings__ring-hit {
+  stroke: transparent;
+  pointer-events: stroke;
   cursor: pointer;
 }
 
-.progress-rings__hit--outer {
-  z-index: 1;
-  width: 190px;
-  height: 190px;
-}
-
-.progress-rings__hit:focus-visible {
-  outline: 2px solid #d5fbff;
-  outline-offset: 3px;
+.progress-rings__ring-hit:focus {
+  outline: none;
 }
 
 .progress-rings__core {
@@ -1752,13 +1848,7 @@ h3 {
   height: 58px;
 }
 
-.progress-rings--multiple .progress-rings__core svg {
-  width: 16px;
-  height: 16px;
-}
-
 .progress-rings--multiple .progress-rings__core small {
-  margin-top: 1px;
   font-size: 0.42rem;
 }
 
@@ -1766,14 +1856,7 @@ h3 {
   font-size: 0.72rem;
 }
 
-.progress-rings__core svg {
-  width: 22px;
-  height: 22px;
-  color: #c5f8ff;
-}
-
 .progress-rings__core small {
-  margin-top: 4px;
   color: #7e9cb3;
   font-size: 0.5rem;
   font-weight: 700;
@@ -3948,6 +4031,7 @@ h3 {
 
   .mission-progress .mission-map__brief {
     align-content: center;
+    background: rgba(5, 13, 27, 0.88);
     border-top: 0;
     border-left: 1px solid rgba(31, 69, 101, 0.46);
   }
