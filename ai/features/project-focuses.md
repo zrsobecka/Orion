@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Each project keeps one explicit, smaller outcome that defines what the builder is trying to achieve now. Tasks measure progress inside that focus without pretending to measure the whole application.
+Each project keeps one explicit current outcome. Tasks measure progress inside it, not across the whole application.
 
 ## Behavior
 
@@ -12,13 +12,13 @@ Each project keeps one explicit, smaller outcome that defines what the builder i
 - The completion ratio for a selected focus uses only tasks assigned to that focus.
 - The user can view an archived focus and its tasks without making it active again.
 - Focus titles contain 1–200 characters and remain local in Orion's SQLite data.
-- Existing installations receive one active focus during migration, using the saved next action when available, so existing task progress is preserved.
+- Migration gives existing projects an active focus from the saved next action when available, preserving task progress.
 
 ## Failure and recovery
 
 - Orion prevents adding tasks until a focus exists and offers the focus form in the same panel.
 - If saving fails, the entered title remains visible and the error appears in the task panel.
-- Starting a new focus is reversible in data terms because the previous focus and tasks remain in history. Viewing history does not reactivate or modify it.
+- Starting a focus preserves the previous focus and tasks in history; viewing history never reactivates or modifies it.
 
 ## Deliberate non-goals
 
@@ -28,6 +28,6 @@ Each project keeps one explicit, smaller outcome that defines what the builder i
 
 ## Visual progress
 
-The mission deck separates identity, progress, and history instead of merging them into one graphic. The project planet remains inside its technical orbits, while a neighboring progress instrument represents the main goal and recent focuses. Its outer ring contains one equal segment per feature and communicates status through color; it does not calculate a project percentage. Each recent focus receives a concentric inner ring, with the newest focus nearest the core. At most six focus rings remain visible to preserve legibility, while every older focus stays available in the task-panel selector.
+The mission deck separates identity, progress, and history. The project planet remains in its technical orbits; a neighboring instrument represents the main goal and recent focuses. Its outer ring has one equal, status-colored segment per feature and never calculates a project percentage. Up to six recent focuses form concentric inner rings, newest nearest the core; older focuses remain in the task-panel selector.
 
-A horizontal mission path beneath both instruments shows recent archived focuses, the current focus, and possible next feature branches. Selecting a focus ring, mission-path node, or task-panel option keeps all three surfaces synchronized and changes the progress explanation. At narrow widths, the order becomes planet, progress, path, then working panels without horizontal page overflow. Short transitions respect `prefers-reduced-motion`.
+A mission path shows recent archived focuses, the current focus, and possible next feature branches. Selecting a ring, path node, or task-panel option synchronizes all three and updates the explanation. Narrow layouts order planet, progress, path, then working panels without horizontal overflow. Transitions respect `prefers-reduced-motion`.

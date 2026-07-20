@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Orion translates one commit into practical product evidence and proposes a small, reviewable update to project state. AI never changes task, feature, focus, or goal state by itself.
+Orion translates one commit into product evidence and proposes a small, reviewable state update. AI never changes tasks, features, focus, or goal by itself.
 
 ## Context and execution
 
@@ -16,7 +16,7 @@ Orion translates one commit into practical product evidence and proposes a small
 - Cache identity is project ID + commit hash + prompt version (`commit-impact-v1`).
 - The first valid result wins if duplicate requests finish concurrently.
 - Reopening or re-requesting the same analysis returns SQLite data without calling the model again.
-- Cached relationship suggestions may become stale as project state changes, so review controls always show current tasks and features and the backend validates them again on approval.
+- Because cached relationships may become stale, review controls show current tasks and features and the backend revalidates them on approval.
 
 ## Review loop
 

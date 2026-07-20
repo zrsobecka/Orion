@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Each registered application has one small manual list where the user records what they want to do for that project. Orion stores the list locally and does not decide priorities or create tasks automatically.
+Each project has one local manual task list. Orion neither decides priorities nor creates tasks automatically.
 
 ## Behavior
 
@@ -13,7 +13,7 @@ Each registered application has one small manual list where the user records wha
 - A task can be removed.
 - Open tasks appear before completed tasks; equally recent tasks retain a stable order.
 - Starting a new focus leaves existing tasks attached to the previous focus.
-- The task panel can switch between active and archived focuses; new tasks can be added only while the active focus is selected.
+- The panel switches between active and archived focuses; tasks can be added only to the active focus.
 - Removing a project from Orion also removes its Orion-owned tasks without touching repository files.
 
 ## Deliberate non-goals
@@ -25,4 +25,4 @@ Each registered application has one small manual list where the user records wha
 
 ## Visual behavior
 
-The project cockpit shows the active focus's open-task count as one node in the mission orbit and keeps direct task entry beside the visual map. A compact selector switches the list between focus histories without moving tasks. The composer offers an optional feature relationship and each linked task shows the feature name. In narrow task panels, the title input occupies a full row so the feature selector and add action remain readable. Motion provides orientation and atmosphere, while `prefers-reduced-motion` removes continuous animation for users who request it.
+The cockpit shows the active focus's open-task count in the mission orbit and keeps task entry beside the map. A selector changes focus history without moving tasks. The composer optionally links a feature, whose name appears on the task. In narrow panels the title uses a full row so the feature selector and add action remain readable. `prefers-reduced-motion` removes continuous animation.

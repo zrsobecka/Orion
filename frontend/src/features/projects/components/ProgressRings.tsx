@@ -86,20 +86,22 @@ export function ProgressRings({
           const circumference = 2 * Math.PI * radius;
           const selectedClass = focus.id === selectedFocus?.id ? "is-selected" : "";
           return (
-            <g key={focus.id}>
+            <g className={selectedClass} key={focus.id}>
               <circle
                 className={`progress-rings__focus-track progress-rings__focus-track--${focus.status}`}
                 cx="110"
                 cy="110"
                 r={radius}
               />
-              <circle
-                className={`progress-rings__focus-value progress-rings__focus-value--${focus.status} ${selectedClass}`}
-                cx="110"
-                cy="110"
-                r={radius}
-                strokeDasharray={`${(percent / 100) * circumference} ${circumference}`}
-              />
+              {percent > 0 && (
+                <circle
+                  className={`progress-rings__focus-value progress-rings__focus-value--${focus.status}`}
+                  cx="110"
+                  cy="110"
+                  r={radius}
+                  strokeDasharray={`${(percent / 100) * circumference} ${circumference}`}
+                />
+              )}
             </g>
           );
         })}

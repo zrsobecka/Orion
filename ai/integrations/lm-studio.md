@@ -1,8 +1,6 @@
 # LM Studio integration
 
-LM Studio is Orion's local AI runtime. The Rust integration owns server discovery, model
-selection, optional authentication, timeouts, and structured chat requests. Product prompts and
-schemas remain inside the feature that uses them.
+LM Studio is Orion's local AI runtime. Rust owns server discovery, model selection, optional authentication, timeouts, and structured chat; each feature owns its prompts and schemas.
 
 ## Defaults and overrides
 
@@ -11,11 +9,6 @@ schemas remain inside the feature that uses them.
 - Model override: `ORION_LM_STUDIO_MODEL`
 - Optional token: `LM_STUDIO_API_TOKEN`, with `LM_API_TOKEN` as a compatibility fallback
 
-Without a model override, Orion uses the first model returned by `GET /v1/models`. LM Studio must
-be running and the selected model must support structured output through
-`POST /v1/chat/completions`.
+Without an override, Orion uses the first model from `GET /v1/models`. The server must run and the model must support structured output through `POST /v1/chat/completions`.
 
-The integration is intentionally product-agnostic. Repository feature discovery is its first
-consumer and requests `reasoning_effort: none` because it is a bounded extraction task. Future
-overview and flow evaluation should remain separate consumers and may choose a reasoning mode
-appropriate to their broader evaluation task.
+The integration is product-agnostic. Repository feature discovery requests `reasoning_effort: none` for bounded extraction. Future overview and flow evaluation remain separate consumers and may choose their own reasoning mode.
