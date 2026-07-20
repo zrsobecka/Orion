@@ -1619,7 +1619,6 @@ h3 {
   width: 100%;
   height: 100%;
   overflow: visible;
-  filter: drop-shadow(0 0 16px rgba(24, 213, 245, 0.1));
 }
 
 .progress-rings circle {
@@ -1643,7 +1642,7 @@ h3 {
 }
 
 .progress-rings__feature {
-  stroke-linecap: round;
+  stroke-linecap: butt;
   animation: ring-settle 360ms ease-out;
 }
 
@@ -1665,11 +1664,11 @@ h3 {
 
 .progress-rings__focus-track,
 .progress-rings__focus-value {
-  stroke-width: 8;
+  stroke-width: 6;
 }
 
 .progress-rings__focus-track {
-  stroke: rgba(141, 125, 255, 0.18);
+  stroke: rgba(141, 125, 255, 0.24);
 }
 
 .progress-rings__focus-track--archived {
@@ -1677,9 +1676,8 @@ h3 {
 }
 
 .progress-rings__focus-value {
-  stroke: #9d8fff;
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 5px rgba(141, 125, 255, 0.5));
+  stroke: #a99fff;
+  stroke-linecap: butt;
 }
 
 .progress-rings__focus-value--archived {
@@ -1687,17 +1685,21 @@ h3 {
   filter: none;
 }
 
-.progress-rings__focus-value.is-selected {
-  filter: drop-shadow(0 0 7px currentColor);
+.progress-rings g.is-selected .progress-rings__focus-track {
+  stroke: rgba(130, 194, 215, 0.52);
+}
+
+.progress-rings--focus g.is-selected .progress-rings__focus-value {
+  stroke: var(--cyan-strong);
 }
 
 .progress-rings--features .progress-rings__feature {
-  filter: drop-shadow(0 0 7px currentColor);
+  opacity: 1;
 }
 
 .progress-rings--focus .progress-rings__feature,
 .progress-rings--features .progress-rings__focus-value,
-.progress-rings--focus .progress-rings__focus-value:not(.is-selected) {
+.progress-rings--focus g:not(.is-selected) .progress-rings__focus-value {
   opacity: 0.62;
 }
 
@@ -2188,9 +2190,10 @@ h3 {
 .task-composer input,
 .task-composer select {
   min-width: 0;
-  height: 38px;
-  padding: 0 11px;
+  height: 34px;
+  padding: 0 10px;
   color: var(--text);
+  font-size: 0.68rem;
   background: rgba(3, 10, 22, 0.86);
   border: 1px solid #244764;
   border-radius: var(--radius-md);
@@ -2209,6 +2212,7 @@ h3 {
 
 .task-composer input::placeholder {
   color: #526c84;
+  font-size: 0.66rem;
 }
 
 .task-composer__feature,
@@ -2446,18 +2450,15 @@ h3 {
 
 .cockpit-grid {
   display: grid;
-  grid-template-areas:
-    "evidence tasks"
-    "evidence features";
-  grid-template-columns: minmax(0, 1.65fr) minmax(340px, 0.72fr);
+  grid-template-areas: "tasks evidence";
+  grid-template-columns: minmax(380px, 0.92fr) minmax(0, 1.45fr);
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
   margin-top: 14px;
 }
 
 .cockpit-evidence,
-.cockpit-task-area,
-.cockpit-feature-area {
+.cockpit-task-area {
   display: grid;
   min-width: 0;
   gap: 14px;
@@ -2469,10 +2470,144 @@ h3 {
 
 .cockpit-task-area {
   grid-area: tasks;
+  height: 100%;
 }
 
-.cockpit-feature-area {
-  grid-area: features;
+.cockpit-task-area .task-console {
+  height: 100%;
+}
+
+.cockpit-task-area .task-list {
+  max-height: none;
+  flex: 1;
+}
+
+.application-map {
+  margin-top: 24px;
+}
+
+.application-map__header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 12px;
+  padding-inline: 2px;
+}
+
+.application-map__header h2 {
+  margin-top: 3px;
+  font-size: 1.05rem;
+}
+
+.application-map__header > p {
+  max-width: 460px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.application-map__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.72fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.integrations-panel {
+  overflow: hidden;
+}
+
+.integration-list {
+  display: grid;
+  gap: 1px;
+  background: rgba(31, 69, 101, 0.42);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.integration-card {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+  background: rgba(7, 16, 30, 0.96);
+}
+
+.integration-card__icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(76, 111, 139, 0.36);
+  border-radius: 10px;
+}
+
+.integration-card__icon--git {
+  color: var(--cyan);
+  background: rgba(24, 213, 245, 0.08);
+}
+
+.integration-card__icon--ai {
+  color: #b6aaff;
+  background: rgba(141, 125, 255, 0.1);
+}
+
+.integration-card__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.integration-card h3 {
+  color: var(--text-strong);
+  font-size: 0.78rem;
+}
+
+.integration-card p,
+.integrations-panel__note {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.integration-card p {
+  margin-top: 5px;
+}
+
+.integration-state {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 999px;
+}
+
+.integration-state.is-ready {
+  color: #8fe0bd;
+  background: rgba(84, 193, 144, 0.08);
+  border-color: rgba(84, 193, 144, 0.28);
+}
+
+.integration-state.is-offline {
+  color: #ffb8b4;
+  background: rgba(255, 106, 98, 0.08);
+  border-color: rgba(255, 106, 98, 0.28);
+}
+
+.integration-state.is-on-demand {
+  color: #c2b9ff;
+  background: rgba(141, 125, 255, 0.08);
+  border-color: rgba(141, 125, 255, 0.28);
+}
+
+.integrations-panel__note {
+  padding: 12px 16px 14px;
 }
 
 .panel {
@@ -2768,7 +2903,7 @@ h3 {
 
 .repository-context {
   display: grid;
-  grid-template-columns: minmax(240px, 1.45fr) repeat(2, minmax(125px, 0.65fr)) auto;
+  grid-template-columns: minmax(220px, 1.35fr) repeat(2, minmax(112px, 0.65fr));
   gap: 10px;
   align-items: stretch;
   padding: 14px 15px;
@@ -2813,6 +2948,7 @@ h3 {
 
 .branch-disclosure {
   min-width: 136px;
+  grid-column: 1 / -1;
 }
 
 .branch-disclosure summary {
@@ -3688,6 +3824,10 @@ h3 {
   }
 
   .cockpit-grid {
+    grid-template-columns: 360px minmax(0, 1.3fr);
+  }
+
+  .application-map__grid {
     grid-template-columns: minmax(0, 1.4fr) 320px;
   }
 
@@ -3772,8 +3912,11 @@ h3 {
   .cockpit-grid {
     grid-template-areas:
       "tasks"
-      "evidence"
-      "features";
+      "evidence";
+    grid-template-columns: 1fr;
+  }
+
+  .application-map__grid {
     grid-template-columns: 1fr;
   }
 
@@ -3841,12 +3984,17 @@ h3 {
 
   .page-header,
   .cockpit-header__main,
-  .section-heading {
+  .section-heading,
+  .application-map__header {
     align-items: flex-start;
     flex-direction: column;
   }
 
   .section-heading > p {
+    text-align: left;
+  }
+
+  .application-map__header > p {
     text-align: left;
   }
 

@@ -6,6 +6,7 @@ import {
   Clock3,
   FolderOpen,
   GitBranch,
+  Cpu,
   Pencil,
   Plus,
   Radio,
@@ -91,7 +92,9 @@ export function ProjectCockpit({
   const counts = getFeatureCounts(snapshot);
   const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
   const [selectedFocusId, setSelectedFocusId] = useState<string | null>(activeFocus?.id ?? null);
-  const [selectedRing, setSelectedRing] = useState<ProgressRingSelection>("features");
+  const [selectedRing, setSelectedRing] = useState<ProgressRingSelection>(
+    activeFocus ? "focus" : "features",
+  );
   const previousActiveFocusId = useRef(activeFocus?.id ?? null);
 
   useEffect(() => {
@@ -181,16 +184,6 @@ export function ProjectCockpit({
       </div>
 
       <div className="cockpit-grid">
-        <main className="cockpit-evidence">
-          <GitTelemetry
-            snapshot={snapshot}
-            onRefresh={onRefresh}
-            onGetCommitDetails={onGetCommitDetails}
-            onAnalyzeCommit={onAnalyzeCommit}
-            onReviewCommitAnalysis={onReviewCommitAnalysis}
-          />
-        </main>
-
         <div className="cockpit-task-area">
           <ProjectTasks
             features={snapshot.features}
@@ -209,7 +202,27 @@ export function ProjectCockpit({
           />
         </div>
 
-        <aside className="cockpit-feature-area" aria-label="Project capabilities">
+        <main className="cockpit-evidence">
+          <GitTelemetry
+            snapshot={snapshot}
+            onRefresh={onRefresh}
+            onGetCommitDetails={onGetCommitDetails}
+            onAnalyzeCommit={onAnalyzeCommit}
+            onReviewCommitAnalysis={onReviewCommitAnalysis}
+          />
+        </main>
+      </div>
+
+      <section className="application-map" aria-labelledby="application-map-title">
+        <header className="application-map__header">
+          <div>
+            <p className="eyebrow">Application</p>
+            <h2 id="application-map-title">What it does and what it connects to</h2>
+          </div>
+          <p>Product capabilities and external services, separated from delivery progress.</p>
+        </header>
+
+        <div className="application-map__grid">
           <section className="panel feature-panel feature-panel--compact">
             <div className="panel__header">
               <div>
@@ -301,8 +314,53 @@ export function ProjectCockpit({
               </div>
             )}
           </section>
-        </aside>
-      </div>
+
+          <aside className="panel integrations-panel" aria-labelledby="integrations-title">
+            <div className="panel__header">
+              <div>
+                <p className="eyebrow">Connections</p>
+                <h2 id="integrations-title">Integrations</h2>
+              </div>
+            </div>
+            <div className="integration-list">
+              <article className="integration-card">
+                <span className="integration-card__icon integration-card__icon--git">
+                  <GitBranch size={18} />
+                </span>
+                <div>
+                  <div className="integration-card__title">
+                    <h3>Git</h3>
+                    <span
+                      className={`integration-state ${snapshot.git.available ? "is-ready" : "is-offline"}`}
+                    >
+                      {snapshot.git.available ? "Available" : "Unavailable"}
+                    </span>
+                  </div>
+                  <p>
+                    Reads branches, commits, sync state, and local changes from this repository.
+                  </p>
+                </div>
+              </article>
+              <article className="integration-card">
+                <span className="integration-card__icon integration-card__icon--ai">
+                  <Cpu size={18} />
+                </span>
+                <div>
+                  <div className="integration-card__title">
+                    <h3>LM Studio</h3>
+                    <span className="integration-state is-on-demand">On demand</span>
+                  </div>
+                  <p>Provides local AI for repository feature scans and commit analysis.</p>
+                </div>
+              </article>
+            </div>
+            <p className="integrations-panel__note">
+              “On demand” means Orion checks the service when an AI action starts; it is not a live
+              connection status.
+            </p>
+          </aside>
+        </div>
+      </section>
 
       {showFeatureModal && (
         <FeatureModal

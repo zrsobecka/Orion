@@ -87,7 +87,8 @@ describe("ProgressRings", () => {
 
     expect(screen.getByText("50%")).toBeInTheDocument();
     expect(container.querySelectorAll(".progress-rings__feature")).toHaveLength(2);
-    expect(container.querySelectorAll(".progress-rings__focus-value")).toHaveLength(2);
+    expect(container.querySelectorAll(".progress-rings__focus-track")).toHaveLength(2);
+    expect(container.querySelectorAll(".progress-rings__focus-value")).toHaveLength(1);
     expect(container.querySelector(".progress-rings__feature--blocked")).toBeInTheDocument();
   });
 
@@ -147,5 +148,22 @@ describe("ProgressRings", () => {
       screen.getByRole("button", { name: "Show previous focus Build the foundation" }),
     );
     expect(onSelectFocus).toHaveBeenCalledWith("focus-old");
+  });
+
+  it("does not draw a misleading progress marker when a focus is at zero percent", () => {
+    const { container } = render(
+      <ProgressRings
+        features={features}
+        focuses={[focuses[0]]}
+        tasks={tasks.map((task) => ({ ...task, completed: false }))}
+        selectedFocusId="focus-1"
+        selected="focus"
+        onSelect={vi.fn()}
+        onSelectFocus={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("0%")).toBeInTheDocument();
+    expect(container.querySelector(".progress-rings__focus-value")).not.toBeInTheDocument();
   });
 });
