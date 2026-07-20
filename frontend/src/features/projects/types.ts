@@ -28,10 +28,21 @@ export interface ProjectFeature {
 export interface ProjectTask {
   id: string;
   projectId: string;
+  focusId: string | null;
+  featureId: string | null;
   title: string;
   completed: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProjectFocus {
+  id: string;
+  projectId: string;
+  title: string;
+  status: "active" | "archived";
+  startedAt: string;
+  endedAt: string | null;
 }
 
 export interface GitCommit {
@@ -40,6 +51,60 @@ export interface GitCommit {
   subject: string;
   authoredAt: string;
   author: string;
+  changedFiles: number;
+  additions: number;
+  deletions: number;
+}
+
+export interface GitFileChange {
+  path: string;
+  status: "added" | "modified" | "deleted" | "renamed" | "type changed";
+  additions: number | null;
+  deletions: number | null;
+}
+
+export interface GitCommitDetails {
+  hash: string;
+  files: GitFileChange[];
+  changeTypes: string[];
+  diff: string;
+  diffTruncated: boolean;
+}
+
+export interface CommitTaskSuggestion {
+  taskId: string;
+  reason: string;
+}
+
+export interface CommitFeatureSuggestion {
+  featureId: string;
+  status: FeatureStatus;
+  reason: string;
+}
+
+export interface CommitAnalysis {
+  commitHash: string;
+  model: string;
+  whatChanged: string;
+  nowPossible: string;
+  caution: string;
+  taskSuggestion: CommitTaskSuggestion | null;
+  featureSuggestion: CommitFeatureSuggestion | null;
+  focusImpact: string;
+  goalImpact: string;
+  reviewStatus: "pending" | "accepted" | "rejected";
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+export interface ReviewCommitAnalysisInput {
+  projectId: string;
+  commitHash: string;
+  action: "accept" | "reject";
+  taskId: string | null;
+  completeTask: boolean;
+  featureId: string | null;
+  featureStatus: FeatureStatus | null;
 }
 
 export interface GitBranch {
@@ -65,6 +130,7 @@ export interface GitSnapshot {
 export interface ProjectSnapshot {
   project: Project;
   features: ProjectFeature[];
+  focuses: ProjectFocus[];
   tasks: ProjectTask[];
   git: GitSnapshot;
 }
@@ -91,6 +157,12 @@ export interface AddFeatureInput {
 }
 
 export interface AddProjectTaskInput {
+  projectId: string;
+  featureId: string | null;
+  title: string;
+}
+
+export interface StartProjectFocusInput {
   projectId: string;
   title: string;
 }

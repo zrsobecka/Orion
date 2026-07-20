@@ -5,16 +5,21 @@ import type {
   AcceptFeatureSuggestionsInput,
   AddFeatureInput,
   AddProjectTaskInput,
+  CommitAnalysis,
   Dashboard,
   FeatureAnalysisResult,
   FeatureStatus,
+  GitCommitDetails,
   ProjectSnapshot,
+  ReviewCommitAnalysisInput,
+  StartProjectFocusInput,
   UpdateProjectInput,
 } from "../features/projects/types";
 import { demoDashboard } from "./demo-dashboard";
 
 const isTauri = () => "__TAURI_INTERNALS__" in window;
 const browserDashboard = structuredClone(demoDashboard);
+const browserCommitAnalyses = new Map<string, CommitAnalysis>();
 
 function findBrowserSnapshot(projectId: string) {
   const snapshot = browserDashboard.projects.find(({ project }) => project.id === projectId);
@@ -26,6 +31,81 @@ export const desktopRuntime = {
   async getDashboard(): Promise<Dashboard> {
     if (!isTauri()) return structuredClone(browserDashboard);
     return invoke<Dashboard>("get_dashboard");
+  },
+
+  async getCommitDetails(projectId: string, hash: string): Promise<GitCommitDetails> {
+    if (isTauri()) return invoke<GitCommitDetails>("get_commit_details", { projectId, hash });
+    const snapshot = findBrowserSnapshot(projectId);
+    const commit = snapshot.git.commits.find((candidate) => candidate.hash === hash);
+    if (!commit) throw new Error("The commit is no longer available.");
+    return {
+      hash,
+      files: [
+        {
+          path: "frontend/src/features/projects/components/ProjectCockpit.tsx",
+          status: "modified",
+          additions: commit.additions,
+          deletions: commit.deletions,
+        },
+      ],
+      changeTypes: ["modified"],
+      diff: "diff --git a/frontend/src/features/projects/components/ProjectCockpit.tsx b/frontend/src/features/projects/components/ProjectCockpit.tsx\n",
+      diffTruncated: false,
+    };
+  },
+
+  async analyzeCommit(projectId: string, hash: string): Promise<CommitAnalysis> {
+    if (isTauri()) return invoke<CommitAnalysis>("analyze_commit", { projectId, hash });
+    const cacheKey = `${projectId}:${hash}`;
+    const cached = browserCommitAnalyses.get(cacheKey);
+    if (cached) return structuredClone(cached);
+    const snapshot = findBrowserSnapshot(projectId);
+    const task = snapshot.tasks.find(({ completed }) => !completed) ?? null;
+    const feature = snapshot.features.find(({ status }) => status === "in_progress") ?? null;
+    const analysis: CommitAnalysis = {
+      commitHash: hash,
+      model: "browser-preview/local-model",
+      whatChanged: "The commit added concrete repository evidence to the project cockpit.",
+      nowPossible: "You can inspect changed files and line totals without leaving Orion.",
+      caution: "The commit proves implementation changed, not that every user path was verified.",
+      taskSuggestion: task
+        ? { taskId: task.id, reason: "The commit appears to implement this task's outcome." }
+        : null,
+      featureSuggestion: feature
+        ? {
+            featureId: feature.id,
+            status: "working",
+            reason: "The commit contains implementation evidence for this feature.",
+          }
+        : null,
+      focusImpact: "This may complete one step in the active focus.",
+      goalImpact: "The project has stronger health and resume-work evidence.",
+      reviewStatus: "pending",
+      createdAt: new Date().toISOString(),
+      reviewedAt: null,
+    };
+    browserCommitAnalyses.set(cacheKey, analysis);
+    return structuredClone(analysis);
+  },
+
+  async reviewCommitAnalysis(input: ReviewCommitAnalysisInput): Promise<ProjectSnapshot> {
+    if (isTauri()) return invoke<ProjectSnapshot>("review_commit_analysis", { input });
+    const snapshot = findBrowserSnapshot(input.projectId);
+    const analysis = browserCommitAnalyses.get(`${input.projectId}:${input.commitHash}`);
+    if (!analysis) throw new Error("Analyze this commit before reviewing its proposals.");
+    if (input.action === "accept") {
+      if (input.completeTask && input.taskId) {
+        const task = snapshot.tasks.find(({ id }) => id === input.taskId);
+        if (task) task.completed = true;
+      }
+      if (input.featureId && input.featureStatus) {
+        const feature = snapshot.features.find(({ id }) => id === input.featureId);
+        if (feature) feature.status = input.featureStatus;
+      }
+    }
+    analysis.reviewStatus = input.action === "accept" ? "accepted" : "rejected";
+    analysis.reviewedAt = new Date().toISOString();
+    return structuredClone(snapshot);
   },
 
   async selectProjectFolder(): Promise<string | null> {
@@ -135,14 +215,39 @@ export const desktopRuntime = {
     if (isTauri()) return invoke<ProjectSnapshot>("add_project_task", { input });
 
     const snapshot = findBrowserSnapshot(input.projectId);
+    const focus = snapshot.focuses.find(({ status }) => status === "active");
+    if (!focus) throw new Error("Start a project focus before adding tasks.");
     const now = new Date().toISOString();
     snapshot.tasks.unshift({
       id: crypto.randomUUID(),
       projectId: input.projectId,
+      focusId: focus.id,
+      featureId: input.featureId,
       title: input.title.trim(),
       completed: false,
       createdAt: now,
       updatedAt: now,
+    });
+    return structuredClone(snapshot);
+  },
+
+  async startProjectFocus(input: StartProjectFocusInput): Promise<ProjectSnapshot> {
+    if (isTauri()) return invoke<ProjectSnapshot>("start_project_focus", { input });
+    const snapshot = findBrowserSnapshot(input.projectId);
+    const now = new Date().toISOString();
+    for (const focus of snapshot.focuses) {
+      if (focus.status === "active") {
+        focus.status = "archived";
+        focus.endedAt = now;
+      }
+    }
+    snapshot.focuses.unshift({
+      id: crypto.randomUUID(),
+      projectId: input.projectId,
+      title: input.title.trim(),
+      status: "active",
+      startedAt: now,
+      endedAt: null,
     });
     return structuredClone(snapshot);
   },

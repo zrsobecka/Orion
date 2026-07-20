@@ -32,6 +32,8 @@ Run `scripts\Build-App.ps1`. Every release uses a unique `%LOCALAPPDATA%\Orion\b
 - `Orion-setup.exe` — NSIS installer when produced;
 - `Orion.msi` — MSI installer when produced.
 
+Before starting the release, check whether the exact `app\Orion.exe` is running. Close it with the user's awareness before the final copy step; Windows locks the executable and otherwise the full compilation can succeed while artifact replacement fails. If that happens, preserve the completed `release-*` target and copy its verified outputs after Orion is closed instead of rebuilding.
+
 After every check, package copy, and hash calculation succeeds, the script removes that release target and `frontend\dist`. If any step fails, both are retained and the script prints the release-target path for debugging. It never removes the reusable development cache or an unexpected directory. Release output is no longer duplicated under `artifacts\`.
 
 If the command runner times out during `Build-App.ps1`, do not start a second build immediately.

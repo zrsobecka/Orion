@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRelativeTime, getCompletionPercent, getDashboardMetrics } from "./projectModel";
+import { formatRelativeTime, getDashboardMetrics, getTaskCompletionPercent } from "./projectModel";
 import type { ProjectSnapshot } from "./types";
 
 const snapshot = (overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot => ({
@@ -37,6 +37,16 @@ const snapshot = (overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot => 
       updatedAt: "2026-07-13T10:00:00Z",
     },
   ],
+  focuses: [
+    {
+      id: "focus-1",
+      projectId: "project-1",
+      title: "Ship the cockpit",
+      status: "active",
+      startedAt: "2026-07-13T10:00:00Z",
+      endedAt: null,
+    },
+  ],
   tasks: [],
   git: {
     available: true,
@@ -54,9 +64,41 @@ const snapshot = (overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot => 
 });
 
 describe("project projections", () => {
-  it("calculates working-feature completion", () => {
-    expect(getCompletionPercent(snapshot())).toBe(50);
-    expect(getCompletionPercent(snapshot({ features: [] }))).toBe(0);
+  it("calculates current-focus completion from project tasks", () => {
+    const tasks = [
+      {
+        id: "task-1",
+        projectId: "project-1",
+        focusId: "focus-1",
+        featureId: null,
+        title: "First step",
+        completed: true,
+        createdAt: "2026-07-13T10:00:00Z",
+        updatedAt: "2026-07-13T10:00:00Z",
+      },
+      {
+        id: "task-old",
+        projectId: "project-1",
+        focusId: "focus-old",
+        featureId: null,
+        title: "Old completed work",
+        completed: true,
+        createdAt: "2026-07-12T10:00:00Z",
+        updatedAt: "2026-07-12T10:00:00Z",
+      },
+      {
+        id: "task-2",
+        projectId: "project-1",
+        focusId: "focus-1",
+        featureId: "feature-2",
+        title: "Second step",
+        completed: false,
+        createdAt: "2026-07-13T10:00:00Z",
+        updatedAt: "2026-07-13T10:00:00Z",
+      },
+    ];
+    expect(getTaskCompletionPercent(snapshot({ tasks }))).toBe(50);
+    expect(getTaskCompletionPercent(snapshot({ tasks: [] }))).toBe(0);
   });
 
   it("aggregates dashboard attention signals", () => {

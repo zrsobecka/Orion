@@ -17,9 +17,13 @@ export function getFeatureCounts(snapshot: ProjectSnapshot) {
   );
 }
 
-export function getCompletionPercent(snapshot: ProjectSnapshot) {
-  if (snapshot.features.length === 0) return 0;
-  return Math.round((getFeatureCounts(snapshot).working / snapshot.features.length) * 100);
+export function getTaskCompletionPercent(snapshot: ProjectSnapshot) {
+  const activeFocus = snapshot.focuses.find((focus) => focus.status === "active");
+  if (!activeFocus) return 0;
+  const focusTasks = snapshot.tasks.filter((task) => task.focusId === activeFocus.id);
+  if (focusTasks.length === 0) return 0;
+  const completed = focusTasks.filter((task) => task.completed).length;
+  return Math.round((completed / focusTasks.length) * 100);
 }
 
 export function getDashboardMetrics(projects: ProjectSnapshot[]) {

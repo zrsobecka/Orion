@@ -4,9 +4,13 @@ import type {
   AcceptFeatureSuggestionsInput,
   AddFeatureInput,
   AddProjectTaskInput,
+  CommitAnalysis,
   FeatureAnalysisResult,
   FeatureStatus,
+  GitCommitDetails,
   ProjectSnapshot,
+  ReviewCommitAnalysisInput,
+  StartProjectFocusInput,
   UpdateProjectInput,
 } from "../types";
 
@@ -118,6 +122,31 @@ export function useProjects() {
     [],
   );
 
+  const getCommitDetails = useCallback(
+    (projectId: string, hash: string): Promise<GitCommitDetails> =>
+      desktopRuntime.getCommitDetails(projectId, hash),
+    [],
+  );
+
+  const analyzeCommit = useCallback(
+    (projectId: string, hash: string): Promise<CommitAnalysis> =>
+      desktopRuntime.analyzeCommit(projectId, hash),
+    [],
+  );
+
+  const reviewCommitAnalysis = useCallback(
+    async (input: ReviewCommitAnalysisInput) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.reviewCommitAnalysis(input));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
   const acceptFeatureSuggestions = useCallback(
     async (input: AcceptFeatureSuggestionsInput) => {
       setError(null);
@@ -148,6 +177,19 @@ export function useProjects() {
       setError(null);
       try {
         replaceSnapshot(await desktopRuntime.addProjectTask(input));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
+  const startProjectFocus = useCallback(
+    async (input: StartProjectFocusInput) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.startProjectFocus(input));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
         throw caught;
@@ -217,9 +259,13 @@ export function useProjects() {
     updateProject,
     addFeature,
     analyzeProjectFeatures,
+    getCommitDetails,
+    analyzeCommit,
+    reviewCommitAnalysis,
     acceptFeatureSuggestions,
     updateFeatureStatus,
     addProjectTask,
+    startProjectFocus,
     setProjectTaskCompleted,
     removeProjectTask,
     removeProject,

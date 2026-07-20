@@ -49,10 +49,22 @@ export const demoDashboard: Dashboard = {
           updatedAt: "2026-07-13T09:00:00Z",
         },
       ],
+      focuses: [
+        {
+          id: "focus-orion",
+          projectId: "orion-demo",
+          title: "Verify the first native project-import loop",
+          status: "active",
+          startedAt: "2026-07-13T11:00:00Z",
+          endedAt: null,
+        },
+      ],
       tasks: [
         {
           id: "t-map",
           projectId: "orion-demo",
+          focusId: "focus-orion",
+          featureId: "f-overview",
           title: "Turn the project cockpit into a visual mission map",
           completed: false,
           createdAt: "2026-07-13T13:25:00Z",
@@ -61,6 +73,8 @@ export const demoDashboard: Dashboard = {
         {
           id: "t-native",
           projectId: "orion-demo",
+          focusId: "focus-orion",
+          featureId: "f-git",
           title: "Verify the exact packaged Orion.exe",
           completed: false,
           createdAt: "2026-07-13T13:18:00Z",
@@ -69,6 +83,8 @@ export const demoDashboard: Dashboard = {
         {
           id: "t-import",
           projectId: "orion-demo",
+          focusId: "focus-orion",
+          featureId: "f-overview",
           title: "Connect the native repository picker",
           completed: true,
           createdAt: "2026-07-13T11:00:00Z",
@@ -105,6 +121,9 @@ export const demoDashboard: Dashboard = {
             subject: "Build project cockpit and feature matrix",
             authoredAt: "2026-07-13T13:17:00Z",
             author: "Demo User",
+            changedFiles: 6,
+            additions: 184,
+            deletions: 31,
           },
           {
             hash: "0e2a8272b101",
@@ -112,6 +131,9 @@ export const demoDashboard: Dashboard = {
             subject: "Add local repository snapshot command",
             authoredAt: "2026-07-13T11:46:00Z",
             author: "Demo User",
+            changedFiles: 4,
+            additions: 112,
+            deletions: 9,
           },
           {
             hash: "5b0e42118f20",
@@ -119,6 +141,9 @@ export const demoDashboard: Dashboard = {
             subject: "Define Orion product contract",
             authoredAt: "2026-07-12T18:40:00Z",
             author: "Demo User",
+            changedFiles: 3,
+            additions: 76,
+            deletions: 2,
           },
         ],
       },
@@ -158,10 +183,22 @@ export const demoDashboard: Dashboard = {
           updatedAt: "2026-07-12T19:00:00Z",
         },
       ],
+      focuses: [
+        {
+          id: "focus-menma",
+          projectId: "menma-demo",
+          title: "Connect the story room to a selected local model",
+          status: "active",
+          startedAt: "2026-07-12T19:00:00Z",
+          endedAt: null,
+        },
+      ],
       tasks: [
         {
           id: "m-task-model",
           projectId: "menma-demo",
+          focusId: "focus-menma",
+          featureId: "m-model",
           title: "Connect the story room to the selected local model",
           completed: false,
           createdAt: "2026-07-12T19:05:00Z",
@@ -192,6 +229,9 @@ export const demoDashboard: Dashboard = {
             subject: "Add model status and roster coverage",
             authoredAt: "2026-07-12T19:00:00Z",
             author: "Demo User",
+            changedFiles: 5,
+            additions: 98,
+            deletions: 18,
           },
         ],
       },

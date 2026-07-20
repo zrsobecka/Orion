@@ -9,12 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import {
-  formatRelativeTime,
-  getCompletionPercent,
-  getDashboardMetrics,
-  getFeatureCounts,
-} from "../projectModel";
+import { formatRelativeTime, getDashboardMetrics, getFeatureCounts } from "../projectModel";
 import type { ProjectSnapshot } from "../types";
 
 interface OverviewProps {
@@ -130,8 +125,11 @@ function MetricCard({
 function ProjectCard({ snapshot, onOpen }: { snapshot: ProjectSnapshot; onOpen: () => void }) {
   const { project, git } = snapshot;
   const counts = getFeatureCounts(snapshot);
-  const completion = getCompletionPercent(snapshot);
   const lastCommit = git.commits[0];
+  const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
+  const nextOpenTask = activeFocus
+    ? snapshot.tasks.find((task) => task.focusId === activeFocus.id && !task.completed)
+    : null;
 
   return (
     <button className="project-card" onClick={onOpen}>
@@ -147,16 +145,36 @@ function ProjectCard({ snapshot, onOpen }: { snapshot: ProjectSnapshot; onOpen: 
         <p>{project.goal || "Add a project goal to make the destination explicit."}</p>
       </div>
       <div className="project-card__next">
-        <span>Next action</span>
-        <strong>{project.nextAction || "Define the next concrete step"}</strong>
+        <span>{activeFocus ? "Active focus" : "Next action"}</span>
+        <strong>
+          {activeFocus?.title || project.nextAction || "Define the next concrete step"}
+        </strong>
+        {nextOpenTask && <small>Next move · {nextOpenTask.title}</small>}
       </div>
       <div className="progress-row">
         <div>
-          <span>Feature health</span>
-          <strong>{completion}%</strong>
+          <span>Feature map</span>
+          <strong>
+            {snapshot.features.length === 0
+              ? "Not mapped"
+              : `${counts.working}/${snapshot.features.length} working`}
+          </strong>
         </div>
-        <div className="progress-track">
-          <span style={{ width: `${completion}%` }} />
+        <div
+          aria-label={`${snapshot.features.length} feature status segments`}
+          className="progress-track feature-status-track"
+        >
+          {snapshot.features.length === 0 ? (
+            <span className="feature-status-track__empty" />
+          ) : (
+            snapshot.features.map((feature) => (
+              <span
+                key={feature.id}
+                className={`feature-status-track__segment feature-status-track__segment--${feature.status}`}
+                title={`${feature.name}: ${feature.status.replace("_", " ")}`}
+              />
+            ))
+          )}
         </div>
         <small>
           {counts.working} working · {counts.in_progress} in progress · {counts.blocked} blocked

@@ -6,8 +6,6 @@ import {
   Clock3,
   FolderOpen,
   GitBranch,
-  GitCommitHorizontal,
-  Orbit,
   Pencil,
   Plus,
   Radio,
@@ -16,7 +14,7 @@ import {
   Target,
   Trash2,
 } from "lucide-react";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { desktopRuntime } from "../../../infrastructure/desktop-runtime";
 import { Modal } from "../../../shared/ui/Modal";
 import { featureStatusLabels, formatRelativeTime, getFeatureCounts } from "../projectModel";
@@ -24,27 +22,39 @@ import type {
   AcceptFeatureSuggestionsInput,
   AddFeatureInput,
   AddProjectTaskInput,
+  CommitAnalysis,
   FeatureAnalysisResult,
   FeaturePriority,
   FeatureSuggestion,
   FeatureStatus,
+  GitCommitDetails,
   ProjectSnapshot,
   ProjectStatus,
+  ReviewCommitAnalysisInput,
+  StartProjectFocusInput,
   UpdateProjectInput,
 } from "../types";
 import { FeatureSuggestionsModal } from "./FeatureSuggestionsModal";
+import { MissionPath } from "./MissionPath";
+import { ProjectPlanet } from "./ProjectPlanet";
 import { ProjectTasks } from "./ProjectTasks";
+import { ProgressRings, type ProgressRingSelection } from "./ProgressRings";
+import { CommitHistory } from "./CommitHistory";
 
 interface ProjectCockpitProps {
   snapshot: ProjectSnapshot;
   onBack: () => void;
   onRefresh: () => void;
+  onGetCommitDetails: (projectId: string, hash: string) => Promise<GitCommitDetails>;
+  onAnalyzeCommit: (projectId: string, hash: string) => Promise<CommitAnalysis>;
+  onReviewCommitAnalysis: (input: ReviewCommitAnalysisInput) => Promise<void>;
   onUpdateProject: (input: UpdateProjectInput) => Promise<void>;
   onAddFeature: (input: AddFeatureInput) => Promise<void>;
   onAnalyzeFeatures: (projectId: string) => Promise<FeatureAnalysisResult>;
   onAcceptFeatureSuggestions: (input: AcceptFeatureSuggestionsInput) => Promise<void>;
   onAddProjectTask: (input: AddProjectTaskInput) => Promise<void>;
   onSetProjectTaskCompleted: (taskId: string, completed: boolean) => Promise<void>;
+  onStartProjectFocus: (input: StartProjectFocusInput) => Promise<void>;
   onRemoveProjectTask: (taskId: string) => Promise<void>;
   onUpdateFeatureStatus: (featureId: string, status: FeatureStatus) => void;
   onRemoveProject: (projectId: string) => Promise<void>;
@@ -56,12 +66,16 @@ export function ProjectCockpit({
   snapshot,
   onBack,
   onRefresh,
+  onGetCommitDetails,
+  onAnalyzeCommit,
+  onReviewCommitAnalysis,
   onUpdateProject,
   onAddFeature,
   onAnalyzeFeatures,
   onAcceptFeatureSuggestions,
   onAddProjectTask,
   onSetProjectTaskCompleted,
+  onStartProjectFocus,
   onRemoveProjectTask,
   onUpdateFeatureStatus,
   onRemoveProject,
@@ -75,7 +89,20 @@ export function ProjectCockpit({
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const counts = getFeatureCounts(snapshot);
-  const openTaskCount = snapshot.tasks.filter((task) => !task.completed).length;
+  const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
+  const [selectedFocusId, setSelectedFocusId] = useState<string | null>(activeFocus?.id ?? null);
+  const [selectedRing, setSelectedRing] = useState<ProgressRingSelection>("features");
+  const previousActiveFocusId = useRef(activeFocus?.id ?? null);
+
+  useEffect(() => {
+    if (previousActiveFocusId.current === activeFocus?.id) return;
+    previousActiveFocusId.current = activeFocus?.id ?? null;
+    setSelectedFocusId(activeFocus?.id ?? null);
+    setSelectedRing(activeFocus ? "focus" : "features");
+  }, [activeFocus]);
+  const openTaskCount = snapshot.tasks.filter(
+    (task) => task.focusId === activeFocus?.id && !task.completed,
+  ).length;
   const features = useMemo(
     () =>
       [...snapshot.features].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
@@ -144,21 +171,46 @@ export function ProjectCockpit({
       <div className="mission-deck">
         <MissionOrbit
           openTaskCount={openTaskCount}
+          onSelectFocus={setSelectedFocusId}
+          onSelectRing={setSelectedRing}
+          selectedFocusId={selectedFocusId}
+          selectedRing={selectedRing}
           snapshot={snapshot}
           workingFeatureCount={counts.working}
-        />
-        <ProjectTasks
-          projectId={snapshot.project.id}
-          tasks={snapshot.tasks}
-          onAdd={onAddProjectTask}
-          onRemove={onRemoveProjectTask}
-          onSetCompleted={onSetProjectTaskCompleted}
         />
       </div>
 
       <div className="cockpit-grid">
-        <main className="cockpit-main">
-          <section className="panel feature-panel">
+        <main className="cockpit-evidence">
+          <GitTelemetry
+            snapshot={snapshot}
+            onRefresh={onRefresh}
+            onGetCommitDetails={onGetCommitDetails}
+            onAnalyzeCommit={onAnalyzeCommit}
+            onReviewCommitAnalysis={onReviewCommitAnalysis}
+          />
+        </main>
+
+        <div className="cockpit-task-area">
+          <ProjectTasks
+            features={snapshot.features}
+            focuses={snapshot.focuses}
+            projectId={snapshot.project.id}
+            selectedFocusId={selectedFocusId}
+            tasks={snapshot.tasks}
+            onAdd={onAddProjectTask}
+            onRemove={onRemoveProjectTask}
+            onSetCompleted={onSetProjectTaskCompleted}
+            onSelectFocus={(focusId) => {
+              setSelectedFocusId(focusId);
+              setSelectedRing("focus");
+            }}
+            onStartFocus={onStartProjectFocus}
+          />
+        </div>
+
+        <aside className="cockpit-feature-area" aria-label="Project capabilities">
+          <section className="panel feature-panel feature-panel--compact">
             <div className="panel__header">
               <div>
                 <p className="eyebrow">Capability map</p>
@@ -249,10 +301,6 @@ export function ProjectCockpit({
               </div>
             )}
           </section>
-        </main>
-
-        <aside className="cockpit-telemetry">
-          <GitTelemetry snapshot={snapshot} onRefresh={onRefresh} />
         </aside>
       </div>
 
@@ -306,11 +354,27 @@ function MissionOrbit({
   snapshot,
   openTaskCount,
   workingFeatureCount,
+  selectedFocusId,
+  selectedRing,
+  onSelectFocus,
+  onSelectRing,
 }: {
   snapshot: ProjectSnapshot;
   openTaskCount: number;
   workingFeatureCount: number;
+  selectedFocusId: string | null;
+  selectedRing: ProgressRingSelection;
+  onSelectFocus: (focusId: string) => void;
+  onSelectRing: (selection: ProgressRingSelection) => void;
 }) {
+  const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
+  const selectedFocus =
+    snapshot.focuses.find((focus) => focus.id === selectedFocusId) ?? activeFocus;
+  const focusTasks = selectedFocus
+    ? snapshot.tasks.filter((task) => task.focusId === selectedFocus.id)
+    : [];
+  const completedFocusTasks = focusTasks.filter((task) => task.completed).length;
+
   return (
     <section className="mission-map" aria-labelledby="mission-orbit-title">
       <div aria-hidden="true" className="mission-map__starfield">
@@ -332,88 +396,128 @@ function MissionOrbit({
         </span>
       </header>
 
-      <div className="mission-map__canvas">
-        <svg aria-hidden="true" className="mission-map__orbits" viewBox="0 0 620 340">
-          <defs>
-            <linearGradient id="orbit-energy" x1="0" x2="1">
-              <stop offset="0" stopColor="currentColor" stopOpacity="0" />
-              <stop offset="0.5" stopColor="currentColor" stopOpacity="1" />
-              <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <ellipse className="orbit-line orbit-line--one" cx="310" cy="170" rx="190" ry="82" />
-          <ellipse
-            className="orbit-line orbit-line--two"
-            cx="310"
-            cy="170"
-            rx="218"
-            ry="112"
-            transform="rotate(-22 310 170)"
-          />
-          <ellipse
-            className="orbit-line orbit-line--three"
-            cx="310"
-            cy="170"
-            rx="226"
-            ry="92"
-            transform="rotate(30 310 170)"
-          />
-          <path
-            className="orbit-energy"
-            d="M84 242 C180 55 440 30 552 184 C598 246 510 319 370 286"
-            stroke="url(#orbit-energy)"
-          />
-        </svg>
+      <div className="mission-map__top">
+        <div className="mission-map__planet-stage">
+          <svg aria-hidden="true" className="mission-map__orbits" viewBox="0 0 620 340">
+            <defs>
+              <linearGradient id="orbit-energy" x1="0" x2="1">
+                <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+                <stop offset="0.5" stopColor="currentColor" stopOpacity="1" />
+                <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <ellipse className="orbit-line orbit-line--one" cx="310" cy="170" rx="190" ry="82" />
+            <ellipse
+              className="orbit-line orbit-line--two"
+              cx="310"
+              cy="170"
+              rx="218"
+              ry="112"
+              transform="rotate(-22 310 170)"
+            />
+            <ellipse
+              className="orbit-line orbit-line--three"
+              cx="310"
+              cy="170"
+              rx="226"
+              ry="92"
+              transform="rotate(30 310 170)"
+            />
+            <path
+              className="orbit-energy"
+              d="M84 242 C180 55 440 30 552 184 C598 246 510 319 370 286"
+              stroke="url(#orbit-energy)"
+            />
+          </svg>
 
-        <div className="mission-core">
-          <span aria-hidden="true" className="mission-core__ring mission-core__ring--outer" />
-          <span aria-hidden="true" className="mission-core__ring mission-core__ring--inner" />
-          <span className="mission-core__icon">
-            <Orbit size={26} />
-          </span>
-          <small>Project core</small>
-          <strong>{snapshot.project.name}</strong>
+          <ProjectPlanet projectName={snapshot.project.name} />
+
+          <div className="orbit-node orbit-node--tasks">
+            <span className="orbit-node__icon">
+              <Target size={15} />
+            </span>
+            <div>
+              <small>Open tasks</small>
+              <strong>{openTaskCount.toString().padStart(2, "0")}</strong>
+            </div>
+          </div>
+          <div className="orbit-node orbit-node--features">
+            <span className="orbit-node__icon">
+              <Radio size={15} />
+            </span>
+            <div>
+              <small>Working features</small>
+              <strong>{workingFeatureCount.toString().padStart(2, "0")}</strong>
+            </div>
+          </div>
+          <div className="orbit-node orbit-node--git">
+            <span className="orbit-node__icon">
+              <Satellite size={15} />
+            </span>
+            <div>
+              <small>Active branch</small>
+              <strong>{snapshot.git.available ? snapshot.git.currentBranch : "Offline"}</strong>
+            </div>
+          </div>
         </div>
 
-        <div className="orbit-node orbit-node--tasks">
-          <span className="orbit-node__icon">
-            <Target size={15} />
-          </span>
-          <div>
-            <small>Open tasks</small>
-            <strong>{openTaskCount.toString().padStart(2, "0")}</strong>
+        <aside className="mission-progress" aria-label="Project goal and focus progress">
+          <header className="mission-progress__header">
+            <div>
+              <p className="eyebrow">Goal and focuses</p>
+              <h3>Progress orbit</h3>
+            </div>
+            <small>
+              {snapshot.focuses.length} focus {snapshot.focuses.length === 1 ? "ring" : "rings"}
+            </small>
+          </header>
+          <div className="mission-progress__rings">
+            <ProgressRings
+              features={snapshot.features}
+              focuses={snapshot.focuses}
+              tasks={snapshot.tasks}
+              selectedFocusId={selectedFocus?.id ?? null}
+              selected={selectedRing}
+              onSelect={onSelectRing}
+              onSelectFocus={onSelectFocus}
+            />
           </div>
-        </div>
-        <div className="orbit-node orbit-node--features">
-          <span className="orbit-node__icon">
-            <Radio size={15} />
-          </span>
-          <div>
-            <small>Working features</small>
-            <strong>{workingFeatureCount.toString().padStart(2, "0")}</strong>
+          <div className="mission-map__brief">
+            <div>
+              <span>
+                {selectedRing === "features"
+                  ? "Main project goal"
+                  : selectedFocus?.status === "active"
+                    ? "Active focus"
+                    : "Previous focus"}
+              </span>
+              <strong>
+                {selectedRing === "features"
+                  ? snapshot.project.goal || "Add what this application should achieve."
+                  : selectedFocus?.title || "Start a focus to define the current outcome."}
+              </strong>
+            </div>
+            <div>
+              <span>{selectedRing === "features" ? "Feature evidence" : "Focus progress"}</span>
+              <strong>
+                {selectedRing === "features"
+                  ? `${snapshot.features.length} segments · ${workingFeatureCount} working · ${snapshot.features.filter((feature) => feature.status === "blocked").length} blocked`
+                  : `${completedFocusTasks} of ${focusTasks.length} tasks complete`}
+              </strong>
+            </div>
           </div>
-        </div>
-        <div className="orbit-node orbit-node--git">
-          <span className="orbit-node__icon">
-            <Satellite size={15} />
-          </span>
-          <div>
-            <small>Active branch</small>
-            <strong>{snapshot.git.available ? snapshot.git.currentBranch : "Offline"}</strong>
-          </div>
-        </div>
+        </aside>
       </div>
 
-      <div className="mission-map__brief">
-        <div>
-          <span>Mission goal</span>
-          <strong>{snapshot.project.goal || "Add what this application should achieve."}</strong>
-        </div>
-        <div>
-          <span>Pinned focus</span>
-          <strong>{snapshot.project.nextAction || "No focus note pinned."}</strong>
-        </div>
-      </div>
+      <MissionPath
+        features={snapshot.features}
+        focuses={snapshot.focuses}
+        selectedFocusId={selectedFocus?.id ?? null}
+        onSelectFocus={(focusId) => {
+          onSelectFocus(focusId);
+          onSelectRing("focus");
+        }}
+      />
     </section>
   );
 }
@@ -438,14 +542,20 @@ function FeatureSummary({
 function GitTelemetry({
   snapshot,
   onRefresh,
+  onGetCommitDetails,
+  onAnalyzeCommit,
+  onReviewCommitAnalysis,
 }: {
   snapshot: ProjectSnapshot;
   onRefresh: () => void;
+  onGetCommitDetails: (projectId: string, hash: string) => Promise<GitCommitDetails>;
+  onAnalyzeCommit: (projectId: string, hash: string) => Promise<CommitAnalysis>;
+  onReviewCommitAnalysis: (input: ReviewCommitAnalysisInput) => Promise<void>;
 }) {
   const { git } = snapshot;
   if (!git.available) {
     return (
-      <section className="panel telemetry-panel">
+      <section className="panel telemetry-panel repository-context-panel">
         <div className="panel__header">
           <div>
             <p className="eyebrow">Repository signal</p>
@@ -465,7 +575,7 @@ function GitTelemetry({
 
   return (
     <>
-      <section className="panel telemetry-panel">
+      <section className="panel telemetry-panel repository-context-panel">
         <div className="panel__header panel__header--compact">
           <div>
             <p className="eyebrow">Repository signal</p>
@@ -475,59 +585,61 @@ function GitTelemetry({
             {git.isDirty ? `${git.modifiedFiles} changed` : "Clean"}
           </span>
         </div>
-        <div className="branch-hero">
-          <span className="signal-icon signal-icon--cyan">
-            <GitBranch size={18} />
-          </span>
-          <div>
-            <span>Current branch</span>
-            <strong>{git.currentBranch}</strong>
-            <small>
-              {git.upstream || "No upstream"} · ↑{git.ahead} ↓{git.behind}
-            </small>
-          </div>
-        </div>
-        <div className="branch-list">
-          {git.branches.slice(0, 4).map((branch) => (
-            <div key={branch.name} className={branch.isCurrent ? "is-current" : ""}>
-              <span className="branch-list__line" />
-              <div>
-                <strong>{branch.name}</strong>
-                <small>{branch.shortHash}</small>
-              </div>
-              <time>{formatRelativeTime(branch.updatedAt)}</time>
+        <div className="repository-context">
+          <div className="branch-hero">
+            <span className="signal-icon signal-icon--cyan">
+              <GitBranch size={18} />
+            </span>
+            <div>
+              <span>Current branch</span>
+              <strong>{git.currentBranch}</strong>
+              <small>{git.upstream || "No upstream"}</small>
             </div>
-          ))}
+          </div>
+          <div className="repository-stat">
+            <span>Sync</span>
+            <strong>
+              ↑{git.ahead} <span aria-hidden="true">·</span> ↓{git.behind}
+            </strong>
+            <small>Ahead / behind</small>
+          </div>
+          <div className="repository-stat">
+            <span>Working tree</span>
+            <strong>{git.isDirty ? `${git.modifiedFiles} changed` : "Clean"}</strong>
+            <small>{git.isDirty ? "Local work not committed" : "No local changes"}</small>
+          </div>
+          <details className="branch-disclosure">
+            <summary>
+              <span className="branch-disclosure__closed">
+                Show branches ({git.branches.length})
+              </span>
+              <span className="branch-disclosure__open">Hide branches</span>
+            </summary>
+            <div className="branch-list">
+              {git.branches.slice(0, 4).map((branch) => (
+                <div key={branch.name} className={branch.isCurrent ? "is-current" : ""}>
+                  <span className="branch-list__line" />
+                  <div>
+                    <strong>{branch.name}</strong>
+                    <small>{branch.shortHash}</small>
+                  </div>
+                  <time>{formatRelativeTime(branch.updatedAt)}</time>
+                </div>
+              ))}
+            </div>
+          </details>
         </div>
       </section>
 
-      <section className="panel telemetry-panel commit-panel">
-        <div className="panel__header panel__header--compact">
-          <div>
-            <p className="eyebrow">Latest changes</p>
-            <h2>Recent commits</h2>
-          </div>
-          <GitCommitHorizontal size={18} />
-        </div>
-        {git.commits.length === 0 ? (
-          <p className="subtle-copy">This repository has no commits yet.</p>
-        ) : (
-          <div className="commit-list">
-            {git.commits.slice(0, 5).map((commit) => (
-              <article key={commit.hash}>
-                <span className="commit-list__node" />
-                <div>
-                  <strong>{commit.subject}</strong>
-                  <p>
-                    <code>{commit.shortHash}</code>
-                    <span>{formatRelativeTime(commit.authoredAt)}</span>
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+      <CommitHistory
+        commits={git.commits.slice(0, 5)}
+        features={snapshot.features}
+        projectId={snapshot.project.id}
+        tasks={snapshot.tasks}
+        onAnalyzeCommit={onAnalyzeCommit}
+        onLoadDetails={onGetCommitDetails}
+        onReviewCommitAnalysis={onReviewCommitAnalysis}
+      />
     </>
   );
 }

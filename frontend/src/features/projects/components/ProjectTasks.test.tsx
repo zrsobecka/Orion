@@ -1,13 +1,48 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ProjectTasks } from "./ProjectTasks";
-import type { ProjectTask } from "../types";
+import type { ProjectFeature, ProjectFocus, ProjectTask } from "../types";
+
+const focuses: ProjectFocus[] = [
+  {
+    id: "focus-1",
+    projectId: "project-1",
+    title: "Ship the cockpit",
+    status: "active",
+    startedAt: "2026-07-17T09:00:00Z",
+    endedAt: null,
+  },
+  {
+    id: "focus-old",
+    projectId: "project-1",
+    title: "Build the foundation",
+    status: "archived",
+    startedAt: "2026-07-16T09:00:00Z",
+    endedAt: "2026-07-17T09:00:00Z",
+  },
+];
+
+const features: ProjectFeature[] = [
+  {
+    id: "feature-1",
+    projectId: "project-1",
+    name: "Project cockpit",
+    description: "",
+    status: "in_progress",
+    priority: "now",
+    evidence: "",
+    createdAt: "2026-07-17T09:00:00Z",
+    updatedAt: "2026-07-17T09:00:00Z",
+  },
+];
 
 const tasks: ProjectTask[] = [
   {
     id: "task-1",
     projectId: "project-1",
+    focusId: "focus-1",
+    featureId: null,
     title: "Build the mission map",
     completed: false,
     createdAt: "2026-07-17T10:00:00Z",
@@ -22,10 +57,15 @@ describe("ProjectTasks", () => {
     render(
       <ProjectTasks
         projectId="project-1"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-1"
         tasks={[]}
         onAdd={onAdd}
         onRemove={vi.fn()}
         onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
+        onStartFocus={vi.fn()}
       />,
     );
 
@@ -34,6 +74,7 @@ describe("ProjectTasks", () => {
 
     expect(onAdd).toHaveBeenCalledWith({
       projectId: "project-1",
+      featureId: null,
       title: "Verify Orion.exe",
     });
     expect(screen.getByLabelText("New task")).toHaveValue("");
@@ -46,10 +87,15 @@ describe("ProjectTasks", () => {
     render(
       <ProjectTasks
         projectId="project-1"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-1"
         tasks={tasks}
         onAdd={vi.fn()}
         onRemove={onRemove}
         onSetCompleted={onSetCompleted}
+        onSelectFocus={vi.fn()}
+        onStartFocus={vi.fn()}
       />,
     );
 
@@ -58,5 +104,91 @@ describe("ProjectTasks", () => {
 
     await user.click(screen.getByRole("button", { name: "Remove Build the mission map" }));
     expect(onRemove).toHaveBeenCalledWith("task-1");
+  });
+
+  it("adds a task linked to a selected feature and shows the relationship", async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ProjectTasks
+        projectId="project-1"
+        features={features}
+        focuses={focuses}
+        selectedFocusId="focus-1"
+        tasks={[{ ...tasks[0], featureId: "feature-1" }]}
+        onAdd={onAdd}
+        onRemove={vi.fn()}
+        onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
+        onStartFocus={vi.fn()}
+      />,
+    );
+
+    expect(within(screen.getByRole("article")).getByText("Project cockpit")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("New task"), "Polish the cockpit");
+    await user.selectOptions(screen.getByLabelText("Related feature"), "feature-1");
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(onAdd).toHaveBeenCalledWith({
+      projectId: "project-1",
+      featureId: "feature-1",
+      title: "Polish the cockpit",
+    });
+  });
+
+  it("starts a new focus without changing old tasks", async () => {
+    const user = userEvent.setup();
+    const onStartFocus = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ProjectTasks
+        projectId="project-1"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-1"
+        tasks={tasks}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
+        onStartFocus={onStartFocus}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "New focus" }));
+    await user.type(
+      screen.getByLabelText("What are you trying to achieve now?"),
+      "Make commit evidence useful",
+    );
+    await user.click(screen.getByRole("button", { name: "Start" }));
+
+    expect(onStartFocus).toHaveBeenCalledWith({
+      projectId: "project-1",
+      title: "Make commit evidence useful",
+    });
+  });
+
+  it("switches the task list to a previous focus without allowing new tasks there", async () => {
+    const user = userEvent.setup();
+    const onSelectFocus = vi.fn();
+    const previousTask = { ...tasks[0], id: "task-old", focusId: "focus-old", title: "Set up Git" };
+    render(
+      <ProjectTasks
+        projectId="project-1"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-old"
+        tasks={[tasks[0], previousTask]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onSetCompleted={vi.fn()}
+        onSelectFocus={onSelectFocus}
+        onStartFocus={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Set up Git")).toBeInTheDocument();
+    expect(screen.queryByLabelText("New task")).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("View focus"), "focus-1");
+    expect(onSelectFocus).toHaveBeenCalledWith("focus-1");
   });
 });
