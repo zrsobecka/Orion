@@ -1642,7 +1642,7 @@ h3 {
 }
 
 .progress-rings__feature {
-  stroke-linecap: butt;
+  stroke-linecap: round;
   animation: ring-settle 360ms ease-out;
 }
 
@@ -1677,7 +1677,7 @@ h3 {
 
 .progress-rings__focus-value {
   stroke: #a99fff;
-  stroke-linecap: butt;
+  stroke-linecap: round;
 }
 
 .progress-rings__focus-value--archived {
