@@ -7,7 +7,7 @@ npm.cmd run setup:local
 npm.cmd run tauri dev
 ```
 
-`setup:local` creates ignored `src-tauri/.cargo/config.toml` and sends the reusable development cache to `%LOCALAPPDATA%\Orion\cargo-target-dev`. This prevents manual Cargo and Tauri development builds from recreating `src-tauri\target` in Dropbox. The development cache is retained because it materially speeds up incremental compilation; it may be removed manually when disk space matters more than build speed.
+`setup:local` creates ignored `src-tauri/.cargo/config.toml` and sends the reusable development cache to `%LOCALAPPDATA%\Orion\cargo-target-dev`, preventing Cargo output in Dropbox. Retain it for faster incremental builds; remove it manually only when reclaiming disk space matters more.
 
 Vite uses the `runner` config loader because the restricted Codex workspace can deny esbuild access to parent directories. If dependency optimization is still restricted, use `npm.cmd run build` followed by `npm.cmd run preview -- --configLoader runner` for production-bundle visual QA.
 
@@ -32,14 +32,11 @@ Run `scripts\Build-App.ps1`. Every release uses a unique `%LOCALAPPDATA%\Orion\b
 - `Orion-setup.exe` — NSIS installer when produced;
 - `Orion.msi` — MSI installer when produced.
 
-Before starting the release, check whether the exact `app\Orion.exe` is running. Close it with the user's awareness before the final copy step; Windows locks the executable and otherwise the full compilation can succeed while artifact replacement fails. If that happens, preserve the completed `release-*` target and copy its verified outputs after Orion is closed instead of rebuilding.
+Before release, check whether `app\Orion.exe` is running and close it with the user's awareness. Windows can lock it after compilation; if replacement fails, preserve the completed target and copy its verified outputs after Orion closes instead of rebuilding.
 
-After every check, package copy, and hash calculation succeeds, the script removes that release target and `frontend\dist`. If any step fails, both are retained and the script prints the release-target path for debugging. It never removes the reusable development cache or an unexpected directory. Release output is no longer duplicated under `artifacts\`.
+After checks, package copies, and hashes succeed, the script removes that release target and `frontend\dist`. On failure it retains both and prints the target path. It never removes the development cache or an unexpected directory, and release output is not duplicated under `artifacts\`.
 
-If the command runner times out during `Build-App.ps1`, do not start a second build immediately.
-First check whether the exact Tauri/Cargo process and newest `release-*` target are still advancing;
-the child build can outlive the runner. Let it finish, then verify hashes before manually copying or
-cleaning only that exact release target if the wrapper could not complete its final steps.
+If the command runner times out, do not immediately start another build: the child can outlive the runner. Check the Tauri/Cargo process and newest target; let active work finish, then verify hashes before copying or cleaning only that exact target.
 
 Create or refresh the desktop shortcut only after a successful build:
 

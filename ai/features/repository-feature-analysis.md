@@ -2,15 +2,11 @@
 
 ## User outcome
 
-Orion can inspect a registered repository and propose missing user-visible features without
-changing the feature map automatically. The builder reviews the evidence, rejects unwanted
-items, and explicitly accepts the rest.
+Orion inspects a registered repository and proposes missing user-visible features. The builder reviews the evidence and explicitly accepts selected items; scanning never changes the feature map.
 
 ## Flow
 
-1. `Scan repository` reads a compact bootstrap sample of tracked and non-ignored text files. It
-   lists at most 15 high-signal paths, reads short excerpts from at most two or three files, and
-   asks for at most three initial proposals so local 12B models remain usable.
+1. `Scan repository` samples tracked, non-ignored text: at most 15 high-signal paths, excerpts from two or three files, and three initial proposals so local 12B models remain usable.
 2. Orion excludes secrets, environment files, databases, binaries, generated output, and
    dependency folders.
 3. The projects feature sends repository context and existing feature names to LM Studio.
@@ -25,8 +21,7 @@ items, and explicitly accepts the rest.
   current feature map unchanged and exposes `Retry`.
 - Closing the review discards proposals because only accepted features are durable.
 - Existing features are never overwritten or removed by repository analysis.
-- The scan is deliberately a bootstrap, so rerunning it after the repository evolves may reveal
-  additional capabilities; it is not intended to exhaustively reconstruct the whole product.
+- The bootstrap scan is deliberately non-exhaustive; rerunning it after the repository evolves may reveal more capabilities.
 
 ## Deliberate boundary
 

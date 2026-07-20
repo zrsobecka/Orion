@@ -1,5 +1,15 @@
 # Orion changelog
 
+## 2026-07-20
+
+- Merged durable project goals and focus history into the main branch.
+
+## 2026-07-19
+
+- Separated project identity from progress: feature-status segments and recent-focus rings replaced a misleading whole-project percentage.
+- Added a synchronized mission path and rebalanced the cockpit so commit evidence remains the primary reading workspace.
+- Preserved responsive and reduced-motion behavior across the new progress surfaces.
+
 ## 2026-07-18
 
 - Added a reusable local LM Studio structured-chat integration with bounded timeouts, model discovery, and optional configuration overrides.
