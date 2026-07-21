@@ -57,12 +57,15 @@ describe("ProjectTasks", () => {
     render(
       <ProjectTasks
         projectId="project-1"
+        projectGoal="Ship a reliable mission control"
         features={[]}
         focuses={focuses}
         selectedFocusId="focus-1"
+        selectedScope="focus"
         tasks={[]}
         onAdd={onAdd}
         onRemove={vi.fn()}
+        onSelectGoal={vi.fn()}
         onSetCompleted={vi.fn()}
         onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
@@ -87,12 +90,15 @@ describe("ProjectTasks", () => {
     render(
       <ProjectTasks
         projectId="project-1"
+        projectGoal="Ship a reliable mission control"
         features={[]}
         focuses={focuses}
         selectedFocusId="focus-1"
+        selectedScope="focus"
         tasks={tasks}
         onAdd={vi.fn()}
         onRemove={onRemove}
+        onSelectGoal={vi.fn()}
         onSetCompleted={onSetCompleted}
         onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
@@ -112,12 +118,15 @@ describe("ProjectTasks", () => {
     render(
       <ProjectTasks
         projectId="project-1"
+        projectGoal="Ship a reliable mission control"
         features={features}
         focuses={focuses}
         selectedFocusId="focus-1"
+        selectedScope="focus"
         tasks={[{ ...tasks[0], featureId: "feature-1" }]}
         onAdd={onAdd}
         onRemove={vi.fn()}
+        onSelectGoal={vi.fn()}
         onSetCompleted={vi.fn()}
         onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
@@ -142,12 +151,15 @@ describe("ProjectTasks", () => {
     render(
       <ProjectTasks
         projectId="project-1"
+        projectGoal="Ship a reliable mission control"
         features={[]}
         focuses={focuses}
         selectedFocusId="focus-1"
+        selectedScope="focus"
         tasks={tasks}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
+        onSelectGoal={vi.fn()}
         onSetCompleted={vi.fn()}
         onSelectFocus={vi.fn()}
         onStartFocus={onStartFocus}
@@ -167,6 +179,42 @@ describe("ProjectTasks", () => {
     });
   });
 
+  it("shows every focus task in the editable main-goal view", () => {
+    const previousTask = {
+      ...tasks[0],
+      id: "task-old",
+      focusId: "focus-old",
+      title: "Set up Git",
+    };
+    render(
+      <ProjectTasks
+        projectId="project-1"
+        projectGoal="Ship a reliable mission control"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-1"
+        selectedScope="goal"
+        tasks={[tasks[0], previousTask]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onSelectGoal={vi.fn()}
+        onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
+        onStartFocus={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Ship a reliable mission control" })).toBeVisible();
+    expect(screen.getByText("Build the mission map")).toBeInTheDocument();
+    expect(screen.getByText("Set up Git")).toBeInTheDocument();
+    expect(screen.getByText("Ship the cockpit")).toBeInTheDocument();
+    expect(screen.getByText("Build the foundation")).toBeInTheDocument();
+    expect(screen.getByLabelText("New task")).toBeInTheDocument();
+    expect(
+      screen.getByText("New tasks join the active focus: Ship the cockpit"),
+    ).toBeInTheDocument();
+  });
+
   it("switches the task list to a previous focus without allowing new tasks there", async () => {
     const user = userEvent.setup();
     const onSelectFocus = vi.fn();
@@ -174,12 +222,15 @@ describe("ProjectTasks", () => {
     render(
       <ProjectTasks
         projectId="project-1"
+        projectGoal="Ship a reliable mission control"
         features={[]}
         focuses={focuses}
         selectedFocusId="focus-old"
+        selectedScope="focus"
         tasks={[tasks[0], previousTask]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
+        onSelectGoal={vi.fn()}
         onSetCompleted={vi.fn()}
         onSelectFocus={onSelectFocus}
         onStartFocus={vi.fn()}
@@ -188,7 +239,32 @@ describe("ProjectTasks", () => {
 
     expect(screen.getByText("Set up Git")).toBeInTheDocument();
     expect(screen.queryByLabelText("New task")).not.toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText("View focus"), "focus-1");
+    await user.selectOptions(screen.getByLabelText("View task scope"), "focus-1");
     expect(onSelectFocus).toHaveBeenCalledWith("focus-1");
+  });
+
+  it("lets the user switch from a focus to the main goal", async () => {
+    const user = userEvent.setup();
+    const onSelectGoal = vi.fn();
+    render(
+      <ProjectTasks
+        projectId="project-1"
+        projectGoal="Ship a reliable mission control"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-1"
+        selectedScope="focus"
+        tasks={tasks}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onSelectGoal={onSelectGoal}
+        onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
+        onStartFocus={vi.fn()}
+      />,
+    );
+
+    await user.selectOptions(screen.getByLabelText("View task scope"), "goal");
+    expect(onSelectGoal).toHaveBeenCalledOnce();
   });
 });

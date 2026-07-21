@@ -2457,6 +2457,12 @@ h3 {
   min-width: 74px;
 }
 
+.task-composer__scope-note {
+  grid-column: 1 / -1;
+  color: #718ca3;
+  font-size: 0.55rem;
+}
+
 @container (max-width: 430px) {
   .task-composer {
     grid-template-columns: minmax(0, 1fr) auto;

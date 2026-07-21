@@ -25,6 +25,8 @@ Move existing material toward these homes only when related to the current chang
 
 Follow `ai/project/WORKFLOWS.md`: run its full quality gate before committing behavior changes and use its release procedure for the exact `app\Orion.exe` launched by the desktop shortcut. Keep component tests on `happy-dom`; `jsdom@29.1.1` caused Vitest worker startup timeouts in this Windows/Dropbox workspace.
 
+At final handoff for behavior changes, leave the final commands to the user: first ask them to run `npm.cmd run check:all`, then after it passes ask them to run `npm.cmd run update:local`. Do not run those two final commands on their behalf unless they explicitly ask.
+
 If Git was initialized after dependency installation, rerun `npm.cmd run prepare` and verify `git config --get core.hooksPath` returns `.husky/_`.
 
 ## Safety

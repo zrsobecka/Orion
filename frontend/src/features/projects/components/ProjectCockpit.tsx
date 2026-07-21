@@ -190,10 +190,13 @@ export function ProjectCockpit({
             features={snapshot.features}
             focuses={snapshot.focuses}
             projectId={snapshot.project.id}
+            projectGoal={snapshot.project.goal}
             selectedFocusId={selectedFocusId}
+            selectedScope={selectedRing}
             tasks={snapshot.tasks}
             onAdd={onAddProjectTask}
             onRemove={onRemoveProjectTask}
+            onSelectGoal={() => setSelectedRing("goal")}
             onSetCompleted={onSetProjectTaskCompleted}
             onSelectFocus={(focusId) => {
               setSelectedFocusId(focusId);
