@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatRelativeTime, getDashboardMetrics, getTaskCompletionPercent } from "./projectModel";
-import type { ProjectSnapshot } from "./types";
+import {
+  formatRelativeTime,
+  getDashboardMetrics,
+  getGoalTasks,
+  getTaskCompletionPercent,
+  getTaskProgress,
+} from "./projectModel";
+import type { ProjectFocus, ProjectSnapshot, ProjectTask } from "./types";
 
 const snapshot = (overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot => ({
   project: {
@@ -99,6 +105,56 @@ describe("project projections", () => {
     ];
     expect(getTaskCompletionPercent(snapshot({ tasks }))).toBe(50);
     expect(getTaskCompletionPercent(snapshot({ tasks: [] }))).toBe(0);
+  });
+
+  it("calculates goal completion only from tasks assigned to known focuses", () => {
+    const focuses: ProjectFocus[] = [
+      ...snapshot().focuses,
+      {
+        id: "focus-old",
+        projectId: "project-1",
+        title: "Previous outcome",
+        status: "archived",
+        startedAt: "2026-07-12T10:00:00Z",
+        endedAt: "2026-07-13T10:00:00Z",
+      },
+    ];
+    const tasks: ProjectTask[] = [
+      {
+        id: "task-current",
+        projectId: "project-1",
+        focusId: "focus-1",
+        featureId: null,
+        title: "Current work",
+        completed: false,
+        createdAt: "2026-07-13T10:00:00Z",
+        updatedAt: "2026-07-13T10:00:00Z",
+      },
+      {
+        id: "task-old",
+        projectId: "project-1",
+        focusId: "focus-old",
+        featureId: null,
+        title: "Previous work",
+        completed: true,
+        createdAt: "2026-07-12T10:00:00Z",
+        updatedAt: "2026-07-12T10:00:00Z",
+      },
+      {
+        id: "task-orphan",
+        projectId: "project-1",
+        focusId: null,
+        featureId: null,
+        title: "Legacy task",
+        completed: true,
+        createdAt: "2026-07-11T10:00:00Z",
+        updatedAt: "2026-07-11T10:00:00Z",
+      },
+    ];
+
+    const goalTasks = getGoalTasks(focuses, tasks);
+    expect(goalTasks.map((task) => task.id)).toEqual(["task-current", "task-old"]);
+    expect(getTaskProgress(goalTasks)).toEqual({ completed: 1, percent: 50, total: 2 });
   });
 
   it("aggregates dashboard attention signals", () => {

@@ -21,8 +21,8 @@ Each project has one local manual task list. Orion neither decides priorities no
 - Due dates, estimates, tags, priorities, subtasks, or assignees.
 - AI recommendations or automatic status changes.
 - Synchronization with external task managers.
-- Treating task completion as the project's overall progress.
+- Estimates, weights, or manually overridden progress percentages.
 
 ## Visual behavior
 
-The cockpit shows the active focus's open-task count in the mission orbit and keeps task entry beside the map. A selector changes focus history without moving tasks. The composer optionally links a feature, whose name appears on the task. In narrow panels the title uses a full row so the feature selector and add action remain readable. `prefers-reduced-motion` removes continuous animation.
+The cockpit shows the active focus's open-task count in the mission orbit and keeps the editable task list below the map. The orbit's outer ring aggregates all focus-assigned tasks; each inner ring uses only one focus's tasks. The read-only `Goal and focuses` panel previews the tasks behind the selected percentage without replacing the editable list. A selector changes focus history without moving tasks. The composer optionally links a feature, whose name appears on the task. In narrow panels the title uses a full row so the feature selector and add action remain readable. `prefers-reduced-motion` removes continuous animation.
