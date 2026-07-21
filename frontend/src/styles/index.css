@@ -321,11 +321,111 @@ h3 {
   border: 0;
 }
 
+.app-frame {
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  background: var(--canvas);
+}
+
+.title-bar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  min-width: 0;
+  color: var(--text-soft);
+  background:
+    linear-gradient(90deg, rgba(20, 67, 105, 0.28), transparent 28%), rgba(4, 9, 20, 0.98);
+  border-bottom: 1px solid rgba(45, 71, 103, 0.65);
+  user-select: none;
+}
+
+.title-bar::after {
+  position: absolute;
+  right: 138px;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(90deg, rgba(24, 213, 245, 0.52), transparent 38%);
+}
+
+.title-bar__brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  padding-left: 13px;
+}
+
+.title-bar__logo {
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 9px rgba(24, 213, 245, 0.42));
+  pointer-events: none;
+}
+
+.title-bar__brand strong {
+  color: var(--text);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+}
+
+.title-bar__brand span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title-bar__controls {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.title-bar__control {
+  display: grid;
+  width: 46px;
+  padding: 0;
+  place-items: center;
+  color: #8fa3b9;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.title-bar__control:hover {
+  color: var(--text);
+  background: rgba(66, 105, 144, 0.24);
+}
+
+.title-bar__control--close:hover {
+  color: #ffffff;
+  background: #b83b50;
+}
+
+.title-bar__control:focus-visible {
+  position: relative;
+  z-index: 2;
+  outline-offset: -2px;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   width: 100%;
   height: 100%;
+  min-height: 0;
 }
 
 .sidebar {

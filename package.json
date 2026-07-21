@@ -14,6 +14,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "setup:local": "pwsh.exe -NoProfile -File scripts/Initialize-LocalBuild.ps1",
+    "check:all": "pwsh.exe -NoProfile -File scripts/Orion-Check.ps1",
+    "update:local": "pwsh.exe -NoProfile -File scripts/Orion-Update.ps1",
     "prepare": "husky"
   },
   "lint-staged": {
