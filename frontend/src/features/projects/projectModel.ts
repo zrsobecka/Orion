@@ -1,4 +1,4 @@
-import type { FeatureStatus, ProjectSnapshot } from "./types";
+import type { FeatureStatus, ProjectFocus, ProjectSnapshot, ProjectTask } from "./types";
 
 export const featureStatusLabels: Record<FeatureStatus, string> = {
   planned: "Planned",
@@ -21,9 +21,21 @@ export function getTaskCompletionPercent(snapshot: ProjectSnapshot) {
   const activeFocus = snapshot.focuses.find((focus) => focus.status === "active");
   if (!activeFocus) return 0;
   const focusTasks = snapshot.tasks.filter((task) => task.focusId === activeFocus.id);
-  if (focusTasks.length === 0) return 0;
-  const completed = focusTasks.filter((task) => task.completed).length;
-  return Math.round((completed / focusTasks.length) * 100);
+  return getTaskProgress(focusTasks).percent;
+}
+
+export function getTaskProgress(tasks: ProjectTask[]) {
+  const completed = tasks.filter((task) => task.completed).length;
+  return {
+    completed,
+    percent: tasks.length === 0 ? 0 : Math.round((completed / tasks.length) * 100),
+    total: tasks.length,
+  };
+}
+
+export function getGoalTasks(focuses: ProjectFocus[], tasks: ProjectTask[]) {
+  const focusIds = new Set(focuses.map((focus) => focus.id));
+  return tasks.filter((task) => task.focusId !== null && focusIds.has(task.focusId));
 }
 
 export function getDashboardMetrics(projects: ProjectSnapshot[]) {

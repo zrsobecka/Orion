@@ -321,11 +321,111 @@ h3 {
   border: 0;
 }
 
+.app-frame {
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  background: var(--canvas);
+}
+
+.title-bar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  min-width: 0;
+  color: var(--text-soft);
+  background:
+    linear-gradient(90deg, rgba(20, 67, 105, 0.28), transparent 28%), rgba(4, 9, 20, 0.98);
+  border-bottom: 1px solid rgba(45, 71, 103, 0.65);
+  user-select: none;
+}
+
+.title-bar::after {
+  position: absolute;
+  right: 138px;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(90deg, rgba(24, 213, 245, 0.52), transparent 38%);
+}
+
+.title-bar__brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  padding-left: 13px;
+}
+
+.title-bar__logo {
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 9px rgba(24, 213, 245, 0.42));
+  pointer-events: none;
+}
+
+.title-bar__brand strong {
+  color: var(--text);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+}
+
+.title-bar__brand span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title-bar__controls {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.title-bar__control {
+  display: grid;
+  width: 46px;
+  padding: 0;
+  place-items: center;
+  color: #8fa3b9;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.title-bar__control:hover {
+  color: var(--text);
+  background: rgba(66, 105, 144, 0.24);
+}
+
+.title-bar__control--close:hover {
+  color: #ffffff;
+  background: #b83b50;
+}
+
+.title-bar__control:focus-visible {
+  position: relative;
+  z-index: 2;
+  outline-offset: -2px;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   width: 100%;
   height: 100%;
+  min-height: 0;
 }
 
 .sidebar {
@@ -1484,7 +1584,7 @@ h3 {
   position: absolute;
   top: 50%;
   left: 50%;
-  z-index: 2;
+  z-index: 3;
   display: grid;
   width: 220px;
   height: 220px;
@@ -1499,46 +1599,6 @@ h3 {
   background: rgba(74, 128, 216, 0.28);
   border-radius: 50%;
   filter: blur(32px);
-}
-
-.mission-core__ring {
-  position: absolute;
-  border-radius: 50%;
-}
-
-.mission-core__ring--outer {
-  inset: 12px;
-  padding: 10px;
-  background: conic-gradient(
-    from -90deg,
-    #73a9c7 0deg 174deg,
-    #78dea9 178deg 352deg,
-    #73a9c7 356deg 360deg
-  );
-  box-shadow:
-    0 0 22px rgba(77, 127, 216, 0.22),
-    0 0 54px rgba(73, 223, 162, 0.1);
-  mask:
-    linear-gradient(#000 0 0) content-box exclude,
-    linear-gradient(#000 0 0);
-  animation: core-spin 32s linear infinite;
-}
-
-.mission-core__ring--inner {
-  inset: 40px;
-  border: 8px solid rgba(92, 88, 180, 0.55);
-  box-shadow:
-    0 0 18px rgba(112, 91, 218, 0.2),
-    inset 0 0 20px rgba(77, 127, 216, 0.12);
-}
-
-.mission-core__ring--inner::after {
-  position: absolute;
-  inset: -15px;
-  content: "";
-  border: 1px solid rgba(144, 130, 255, 0.24);
-  border-radius: 50%;
-  animation: core-spin 18s linear infinite reverse;
 }
 
 .mission-core__surface {
@@ -1611,9 +1671,9 @@ h3 {
   position: absolute;
   top: 50%;
   left: 50%;
-  z-index: 3;
-  width: 220px;
-  height: 220px;
+  z-index: 2;
+  width: 260px;
+  height: 260px;
   transform: translate(-50%, -50%);
 }
 
@@ -1653,19 +1713,221 @@ h3 {
   font-size: 0.56rem;
 }
 
-.mission-progress__rings {
-  display: grid;
-  min-height: 238px;
-  flex: 1;
-  place-items: center;
-  padding: 9px 0;
+.mission-map__ring-legend {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  gap: 14px;
+  color: #6f8da8;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: translateX(-50%);
 }
 
-.mission-progress .progress-rings {
-  position: relative;
-  top: auto;
-  left: auto;
-  transform: none;
+.mission-map__ring-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.mission-map__ring-legend i {
+  width: 8px;
+  height: 8px;
+  border: 2px solid;
+  border-radius: 50%;
+}
+
+.mission-map__ring-legend .is-goal {
+  border-color: var(--cyan-strong);
+}
+
+.mission-map__ring-legend .is-focus {
+  border-color: var(--focus-ring-violet);
+}
+
+.progress-task-preview__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  padding: 13px 14px;
+  background: rgba(7, 17, 34, 0.72);
+  border-bottom: 1px solid rgba(31, 69, 101, 0.46);
+}
+
+.progress-task-preview__summary > div {
+  min-width: 0;
+}
+
+.progress-task-preview__summary span {
+  color: #718da6;
+  font-size: 0.53rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.progress-task-preview__summary h3 {
+  display: -webkit-box;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #e7f8ff;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.progress-task-preview__summary > strong {
+  align-self: center;
+  color: var(--green);
+  font-size: 1.22rem;
+  letter-spacing: -0.04em;
+  text-shadow: 0 0 14px rgba(73, 223, 162, 0.28);
+}
+
+.progress-task-preview__summary > p {
+  grid-column: 1 / -1;
+  color: #7690a8;
+  font-size: 0.56rem;
+}
+
+.progress-task-preview {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.progress-task-preview__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px 7px;
+  color: #89a5bc;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.progress-task-preview__heading span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progress-task-preview__heading small {
+  color: #617b92;
+  font-size: 0.5rem;
+}
+
+.progress-task-preview__groups {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+  scrollbar-color: rgba(82, 126, 156, 0.42) transparent;
+  scrollbar-width: thin;
+}
+
+.progress-task-preview__group + .progress-task-preview__group {
+  margin-top: 10px;
+}
+
+.progress-task-preview__group > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 2px 6px;
+}
+
+.progress-task-preview__group h4 {
+  overflow: hidden;
+  color: #9eb7ca;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-task-preview__group header small {
+  flex: 0 0 auto;
+  color: #6d889f;
+  font-size: 0.52rem;
+}
+
+.progress-task-preview__group ul {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progress-task-preview__group li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  min-height: 32px;
+  align-items: center;
+  color: #c8dbe8;
+  font-size: 0.64rem;
+  line-height: 1.35;
+  background: rgba(11, 27, 47, 0.58);
+  border: 1px solid rgba(41, 78, 105, 0.42);
+  border-radius: 7px;
+}
+
+.progress-task-preview__group li > span:first-child {
+  display: grid;
+  color: #68869e;
+  place-items: center;
+}
+
+.progress-task-preview__group li > span:last-child {
+  padding: 6px 8px 6px 0;
+  overflow-wrap: anywhere;
+}
+
+.progress-task-preview__group li.is-completed {
+  color: #7591a5;
+  background: rgba(8, 20, 36, 0.42);
+}
+
+.progress-task-preview__group li.is-completed > span:first-child {
+  color: var(--green);
+}
+
+.progress-task-preview__group li.is-completed > span:last-child {
+  text-decoration: line-through;
+  text-decoration-color: rgba(117, 145, 165, 0.55);
+}
+
+.progress-task-preview__empty {
+  display: grid;
+  min-height: 150px;
+  flex: 1;
+  place-items: center;
+  align-content: center;
+  padding: 18px;
+  color: #6f8ca3;
+  text-align: center;
+}
+
+.progress-task-preview__empty strong {
+  margin-top: 8px;
+  color: #adc4d5;
+  font-size: 0.67rem;
+}
+
+.progress-task-preview__empty p {
+  margin-top: 4px;
+  font-size: 0.58rem;
 }
 
 .progress-rings svg {
@@ -1687,34 +1949,20 @@ h3 {
     filter 180ms ease;
 }
 
-.progress-rings__track,
-.progress-rings__feature {
+.progress-rings__goal-track,
+.progress-rings__goal-value {
   stroke-width: 11;
 }
 
-.progress-rings__track {
+.progress-rings__goal-track {
   stroke: rgba(63, 91, 117, 0.34);
 }
 
-.progress-rings__feature {
+.progress-rings__goal-value {
+  stroke: var(--cyan-strong);
   stroke-linecap: round;
   animation: ring-settle 360ms ease-out;
-}
-
-.progress-rings__feature--working {
-  stroke: var(--green);
-}
-
-.progress-rings__feature--in_progress {
-  stroke: var(--cyan);
-}
-
-.progress-rings__feature--planned {
-  stroke: #52697e;
-}
-
-.progress-rings__feature--blocked {
-  stroke: var(--red);
+  filter: drop-shadow(0 0 5px rgba(90, 167, 196, 0.4));
 }
 
 .progress-rings__focus-track,
@@ -1768,6 +2016,12 @@ h3 {
   opacity: 0.46;
 }
 
+.progress-rings--goal .progress-rings__goal-track,
+.progress-rings.is-goal-hovered .progress-rings__goal-track {
+  stroke: rgba(130, 194, 215, 0.42);
+  stroke-width: 14;
+}
+
 .progress-rings--focus g.is-selected .progress-rings__focus-track,
 .progress-rings g.is-hovered .progress-rings__focus-track {
   stroke-width: 8;
@@ -1787,23 +2041,24 @@ h3 {
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--focus-ring-color) 72%, transparent));
 }
 
-.progress-rings--features .progress-rings__feature,
-.progress-rings.is-features-hovered .progress-rings__feature {
+.progress-rings--goal .progress-rings__goal-value,
+.progress-rings.is-goal-hovered .progress-rings__goal-value {
   opacity: 1;
-  filter: drop-shadow(0 0 4px rgba(77, 127, 216, 0.34));
+  stroke-width: 14;
+  filter: drop-shadow(0 0 7px rgba(90, 167, 196, 0.56));
 }
 
-.progress-rings--focus .progress-rings__feature,
-.progress-rings--features .progress-rings__focus-value,
+.progress-rings--focus .progress-rings__goal-value,
+.progress-rings--goal .progress-rings__focus-value,
 .progress-rings--focus g:not(.is-selected) .progress-rings__focus-value {
   opacity: 0.34;
 }
 
-.progress-rings.is-features-hovered .progress-rings__feature {
+.progress-rings.is-goal-hovered .progress-rings__goal-value {
   opacity: 1;
 }
 
-.progress-rings--features .progress-rings__focus-track {
+.progress-rings--goal .progress-rings__focus-track {
   opacity: 0.13;
 }
 
@@ -1822,51 +2077,9 @@ h3 {
   outline: none;
 }
 
-.progress-rings__core {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 3;
-  display: grid;
-  width: 92px;
-  height: 92px;
-  place-items: center;
-  align-content: center;
-  pointer-events: none;
-  text-align: center;
-  background: radial-gradient(circle, rgba(18, 49, 75, 0.98), rgba(4, 9, 21, 0.98));
-  border: 1px solid rgba(105, 221, 255, 0.32);
-  border-radius: 50%;
-  box-shadow:
-    0 0 35px rgba(24, 213, 245, 0.12),
-    inset 0 0 24px rgba(24, 213, 245, 0.08);
-  transform: translate(-50%, -50%);
-}
-
-.progress-rings--multiple .progress-rings__core {
-  width: 58px;
-  height: 58px;
-}
-
-.progress-rings--multiple .progress-rings__core small {
-  font-size: 0.42rem;
-}
-
-.progress-rings--multiple .progress-rings__core strong {
-  font-size: 0.72rem;
-}
-
-.progress-rings__core small {
-  color: #7e9cb3;
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.progress-rings__core strong {
-  color: #f1fbff;
-  font-size: 0.88rem;
+.progress-rings__ring-hit:focus-visible {
+  stroke: rgba(224, 248, 255, 0.86);
+  stroke-dasharray: 2 5;
 }
 
 .orbit-node {
@@ -1932,38 +2145,6 @@ h3 {
   top: 13%;
   right: 8%;
   animation-delay: -3.1s;
-}
-
-.mission-map__brief {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  gap: 1px;
-  background: rgba(30, 67, 96, 0.5);
-  border-top: 1px solid rgba(31, 69, 101, 0.58);
-}
-
-.mission-progress .mission-map__brief {
-  grid-template-columns: 1fr;
-  border-top: 1px solid rgba(31, 69, 101, 0.46);
-}
-
-.mission-progress .mission-map__brief > div {
-  padding: 9px 12px;
-}
-
-.mission-progress .mission-map__brief > div + div {
-  border-top: 1px solid rgba(30, 67, 96, 0.42);
-}
-
-.mission-progress .mission-map__brief strong {
-  display: -webkit-box;
-  overflow: hidden;
-  line-height: 1.35;
-  white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .mission-path {
@@ -2104,41 +2285,6 @@ h3 {
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.mission-map__brief > div {
-  min-width: 0;
-  padding: 12px 15px;
-  background: rgba(5, 13, 27, 0.88);
-}
-
-.mission-map__brief span {
-  display: block;
-  color: #67839e;
-  font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.mission-map__brief strong {
-  display: block;
-  margin-top: 4px;
-  overflow: hidden;
-  color: #cce0ef;
-  font-size: 0.66rem;
-  font-weight: 600;
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mission-progress .mission-map__brief strong {
-  display: -webkit-box;
-  line-height: 1.35;
-  white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .task-console {
@@ -2309,6 +2455,12 @@ h3 {
 
 .task-composer__submit {
   min-width: 74px;
+}
+
+.task-composer__scope-note {
+  grid-column: 1 / -1;
+  color: #718ca3;
+  font-size: 0.55rem;
 }
 
 @container (max-width: 430px) {
@@ -4017,23 +4169,11 @@ h3 {
   }
 
   .mission-progress {
-    display: grid;
-    grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+    display: flex;
   }
 
-  .mission-progress__header {
-    grid-column: 1 / -1;
-  }
-
-  .mission-progress__rings {
-    min-height: 250px;
-  }
-
-  .mission-progress .mission-map__brief {
-    align-content: center;
-    background: rgba(5, 13, 27, 0.88);
-    border-top: 0;
-    border-left: 1px solid rgba(31, 69, 101, 0.46);
+  .progress-task-preview__groups {
+    max-height: 300px;
   }
 
   .task-list {
@@ -4084,7 +4224,6 @@ h3 {
 
   .metric-grid,
   .mission-strip,
-  .mission-map__brief,
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -4123,17 +4262,8 @@ h3 {
     min-height: 390px;
   }
 
-  .mission-progress {
-    grid-template-columns: 1fr;
-  }
-
-  .mission-progress__header {
-    grid-column: auto;
-  }
-
-  .mission-progress .mission-map__brief {
-    border-top: 1px solid rgba(31, 69, 101, 0.46);
-    border-left: 0;
+  .progress-task-preview__groups {
+    max-height: 260px;
   }
 
   .mission-path__heading {

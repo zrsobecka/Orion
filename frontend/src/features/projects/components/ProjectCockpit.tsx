@@ -40,6 +40,7 @@ import { MissionPath } from "./MissionPath";
 import { ProjectPlanet } from "./ProjectPlanet";
 import { ProjectTasks } from "./ProjectTasks";
 import { ProgressRings, type ProgressRingSelection } from "./ProgressRings";
+import { ProgressTaskPreview } from "./ProgressTaskPreview";
 import { CommitHistory } from "./CommitHistory";
 
 interface ProjectCockpitProps {
@@ -93,7 +94,7 @@ export function ProjectCockpit({
   const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
   const [selectedFocusId, setSelectedFocusId] = useState<string | null>(activeFocus?.id ?? null);
   const [selectedRing, setSelectedRing] = useState<ProgressRingSelection>(
-    activeFocus ? "focus" : "features",
+    activeFocus ? "focus" : "goal",
   );
   const previousActiveFocusId = useRef(activeFocus?.id ?? null);
 
@@ -101,7 +102,7 @@ export function ProjectCockpit({
     if (previousActiveFocusId.current === activeFocus?.id) return;
     previousActiveFocusId.current = activeFocus?.id ?? null;
     setSelectedFocusId(activeFocus?.id ?? null);
-    setSelectedRing(activeFocus ? "focus" : "features");
+    setSelectedRing(activeFocus ? "focus" : "goal");
   }, [activeFocus]);
   const openTaskCount = snapshot.tasks.filter(
     (task) => task.focusId === activeFocus?.id && !task.completed,
@@ -189,10 +190,13 @@ export function ProjectCockpit({
             features={snapshot.features}
             focuses={snapshot.focuses}
             projectId={snapshot.project.id}
+            projectGoal={snapshot.project.goal}
             selectedFocusId={selectedFocusId}
+            selectedScope={selectedRing}
             tasks={snapshot.tasks}
             onAdd={onAddProjectTask}
             onRemove={onRemoveProjectTask}
+            onSelectGoal={() => setSelectedRing("goal")}
             onSetCompleted={onSetProjectTaskCompleted}
             onSelectFocus={(focusId) => {
               setSelectedFocusId(focusId);
@@ -428,10 +432,6 @@ function MissionOrbit({
   const activeFocus = snapshot.focuses.find((focus) => focus.status === "active") ?? null;
   const selectedFocus =
     snapshot.focuses.find((focus) => focus.id === selectedFocusId) ?? activeFocus;
-  const focusTasks = selectedFocus
-    ? snapshot.tasks.filter((task) => task.focusId === selectedFocus.id)
-    : [];
-  const completedFocusTasks = focusTasks.filter((task) => task.completed).length;
 
   return (
     <section className="mission-map" aria-labelledby="mission-orbit-title">
@@ -488,7 +488,24 @@ function MissionOrbit({
             />
           </svg>
 
+          <ProgressRings
+            focuses={snapshot.focuses}
+            tasks={snapshot.tasks}
+            selectedFocusId={selectedFocus?.id ?? null}
+            selected={selectedRing}
+            onSelect={onSelectRing}
+            onSelectFocus={onSelectFocus}
+          />
           <ProjectPlanet projectName={snapshot.project.name} />
+
+          <div className="mission-map__ring-legend" aria-hidden="true">
+            <span>
+              <i className="is-goal" /> Outer · goal
+            </span>
+            <span>
+              <i className="is-focus" /> Inner · focuses
+            </span>
+          </div>
 
           <div className="orbit-node orbit-node--tasks">
             <span className="orbit-node__icon">
@@ -523,47 +540,19 @@ function MissionOrbit({
           <header className="mission-progress__header">
             <div>
               <p className="eyebrow">Goal and focuses</p>
-              <h3>Progress orbit</h3>
+              <h3>Progress details</h3>
             </div>
             <small>
               {snapshot.focuses.length} focus {snapshot.focuses.length === 1 ? "ring" : "rings"}
             </small>
           </header>
-          <div className="mission-progress__rings">
-            <ProgressRings
-              features={snapshot.features}
-              focuses={snapshot.focuses}
-              tasks={snapshot.tasks}
-              selectedFocusId={selectedFocus?.id ?? null}
-              selected={selectedRing}
-              onSelect={onSelectRing}
-              onSelectFocus={onSelectFocus}
-            />
-          </div>
-          <div className="mission-map__brief">
-            <div>
-              <span>
-                {selectedRing === "features"
-                  ? "Main project goal"
-                  : selectedFocus?.status === "active"
-                    ? "Active focus"
-                    : "Previous focus"}
-              </span>
-              <strong>
-                {selectedRing === "features"
-                  ? snapshot.project.goal || "Add what this application should achieve."
-                  : selectedFocus?.title || "Start a focus to define the current outcome."}
-              </strong>
-            </div>
-            <div>
-              <span>{selectedRing === "features" ? "Feature evidence" : "Focus progress"}</span>
-              <strong>
-                {selectedRing === "features"
-                  ? `${snapshot.features.length} segments · ${workingFeatureCount} working · ${snapshot.features.filter((feature) => feature.status === "blocked").length} blocked`
-                  : `${completedFocusTasks} of ${focusTasks.length} tasks complete`}
-              </strong>
-            </div>
-          </div>
+          <ProgressTaskPreview
+            focuses={snapshot.focuses}
+            projectGoal={snapshot.project.goal}
+            selectedFocusId={selectedFocus?.id ?? null}
+            selection={selectedRing}
+            tasks={snapshot.tasks}
+          />
         </aside>
       </div>
 

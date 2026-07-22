@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [switch] $SkipFrontendTests
+    [switch] $SkipFrontendTests,
+    [switch] $SkipCheck
 )
 
 $ErrorActionPreference = 'Stop'
@@ -62,22 +63,47 @@ function Remove-SuccessfulFrontendBundle {
     }
 }
 
+function Test-LocalOrionIsRunning {
+    param(
+        [Parameter(Mandatory)] [string] $ExecutablePath
+    )
+
+    if (-not (Test-Path -LiteralPath $ExecutablePath -PathType Leaf)) {
+        return $false
+    }
+
+    $expectedPath = [System.IO.Path]::GetFullPath($ExecutablePath)
+    foreach ($process in (Get-Process -Name 'orion' -ErrorAction SilentlyContinue)) {
+        try {
+            if ($process.Path -and [System.IO.Path]::GetFullPath($process.Path) -eq $expectedPath) {
+                return $true
+            }
+        } catch {
+            # The process can end between discovery and reading its path.
+        }
+    }
+
+    return $false
+}
+
 $env:CARGO_TARGET_DIR = $targetRoot
 
 try {
     Push-Location $projectRoot
     $locationPushed = $true
 
-    Invoke-NativeCommand 'npm.cmd' @('run', 'lint')
-    Invoke-NativeCommand 'npm.cmd' @('run', 'format:check')
-    if (-not $SkipFrontendTests) {
-        Invoke-NativeCommand 'npm.cmd' @('test')
-    } else {
+    if ($SkipCheck) {
+        Write-Warning 'The quality gate was skipped explicitly. Run npm.cmd run check:all before using this build.'
+    } elseif ($SkipFrontendTests) {
+        Invoke-NativeCommand 'npm.cmd' @('run', 'lint')
+        Invoke-NativeCommand 'npm.cmd' @('run', 'format:check')
         Write-Warning 'Frontend tests were skipped explicitly. Run them in a normal terminal before merging.'
+        Invoke-NativeCommand 'npm.cmd' @('run', 'build')
+        Invoke-NativeCommand 'cargo' @('test', '--manifest-path', 'src-tauri\Cargo.toml')
+        Invoke-NativeCommand 'cargo' @('check', '--manifest-path', 'src-tauri\Cargo.toml')
+    } else {
+        Invoke-NativeCommand 'pwsh.exe' @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'Orion-Check.ps1'))
     }
-    Invoke-NativeCommand 'npm.cmd' @('run', 'build')
-    Invoke-NativeCommand 'cargo' @('test', '--manifest-path', 'src-tauri\Cargo.toml')
-    Invoke-NativeCommand 'cargo' @('check', '--manifest-path', 'src-tauri\Cargo.toml')
     Invoke-NativeCommand 'npm.cmd' @('run', 'tauri', 'build')
 
     $portableSource = Join-Path $targetRoot 'release\orion.exe'
@@ -89,6 +115,9 @@ try {
     New-Item -ItemType Directory -Path $appDirectory -Force | Out-Null
 
     $localExecutable = Join-Path $appDirectory 'Orion.exe'
+    if (Test-LocalOrionIsRunning -ExecutablePath $localExecutable) {
+        throw 'Orion is running from app\Orion.exe. Close it and run the update again.'
+    }
     Copy-Item -LiteralPath $portableSource -Destination $localExecutable -Force
 
     $bundleDirectory = Join-Path $targetRoot 'release\bundle'

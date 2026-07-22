@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import type {
@@ -28,6 +29,21 @@ function findBrowserSnapshot(projectId: string) {
 }
 
 export const desktopRuntime = {
+  async minimizeWindow(): Promise<void> {
+    if (!isTauri()) return;
+    await getCurrentWindow().minimize();
+  },
+
+  async toggleMaximizeWindow(): Promise<void> {
+    if (!isTauri()) return;
+    await getCurrentWindow().toggleMaximize();
+  },
+
+  async closeWindow(): Promise<void> {
+    if (!isTauri()) return;
+    await getCurrentWindow().close();
+  },
+
   async getDashboard(): Promise<Dashboard> {
     if (!isTauri()) return structuredClone(browserDashboard);
     return invoke<Dashboard>("get_dashboard");

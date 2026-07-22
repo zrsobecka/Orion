@@ -1,5 +1,6 @@
 import { Archive, Check, Circle, Crosshair, Plus, Trash2, Zap } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
+import { getGoalTasks, getTaskProgress } from "../projectModel";
 import type {
   AddProjectTaskInput,
   ProjectFeature,
@@ -10,10 +11,13 @@ import type {
 
 interface ProjectTasksProps {
   projectId: string;
+  projectGoal: string;
   features: ProjectFeature[];
   focuses: ProjectFocus[];
   tasks: ProjectTask[];
   selectedFocusId: string | null;
+  selectedScope: "goal" | "focus";
+  onSelectGoal: () => void;
   onSelectFocus: (focusId: string) => void;
   onAdd: (input: AddProjectTaskInput) => Promise<void>;
   onSetCompleted: (taskId: string, completed: boolean) => Promise<void>;
@@ -23,10 +27,13 @@ interface ProjectTasksProps {
 
 export function ProjectTasks({
   projectId,
+  projectGoal,
   features,
   focuses,
   tasks,
   selectedFocusId,
+  selectedScope,
+  onSelectGoal,
   onSelectFocus,
   onAdd,
   onSetCompleted,
@@ -42,11 +49,17 @@ export function ProjectTasks({
   const activeFocus = focuses.find((focus) => focus.status === "active") ?? null;
   const selectedFocus =
     focuses.find((focus) => focus.id === selectedFocusId) ?? activeFocus ?? null;
-  const selectedTasks = selectedFocus
-    ? tasks.filter((task) => task.focusId === selectedFocus.id)
-    : [];
-  const archivedFocusCount = focuses.filter((focus) => focus.status === "archived").length;
-  const completedCount = selectedTasks.filter((task) => task.completed).length;
+  const selectedTasks =
+    selectedScope === "goal"
+      ? getGoalTasks(focuses, tasks)
+      : selectedFocus
+        ? tasks.filter((task) => task.focusId === selectedFocus.id)
+        : [];
+  const progress = getTaskProgress(selectedTasks);
+  const selectedTitle =
+    selectedScope === "goal"
+      ? projectGoal || "Main project goal"
+      : selectedFocus?.title || "Choose a project focus";
 
   const startFocus = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -107,12 +120,12 @@ export function ProjectTasks({
           <p className="eyebrow">
             <Zap size={13} /> Manual flight plan
           </p>
-          <h2 id="project-tasks-title">{selectedFocus?.title ?? "Choose a project focus"}</h2>
+          <h2 id="project-tasks-title">{selectedTitle}</h2>
         </div>
         <div className="task-console__header-actions">
-          {selectedFocus && (
+          {(selectedScope === "goal" || selectedFocus) && (
             <span className="task-console__count">
-              {completedCount}/{selectedTasks.length} done
+              {progress.completed}/{progress.total} done
             </span>
           )}
           <button
@@ -144,18 +157,25 @@ export function ProjectTasks({
         </form>
       )}
 
-      {activeFocus && archivedFocusCount > 0 && selectedFocus && (
+      {focuses.length > 0 && (
         <div className="task-console__history">
           <span>
-            <Archive size={13} /> View focus
+            <Archive size={13} /> View plan
           </span>
           <label className="task-console__focus-switcher">
-            <span className="sr-only">View focus</span>
+            <span className="sr-only">View task scope</span>
             <select
-              aria-label="View focus"
-              onChange={(event) => onSelectFocus(event.target.value)}
-              value={selectedFocus.id}
+              aria-label="View task scope"
+              onChange={(event) => {
+                if (event.target.value === "goal") {
+                  onSelectGoal();
+                  return;
+                }
+                onSelectFocus(event.target.value);
+              }}
+              value={selectedScope === "goal" ? "goal" : (selectedFocus?.id ?? "goal")}
             >
+              <option value="goal">Main goal · all focus tasks</option>
               {focuses.map((focus) => (
                 <option key={focus.id} value={focus.id}>
                   {focus.title} · {focus.status === "active" ? "active" : "previous"}
@@ -166,7 +186,7 @@ export function ProjectTasks({
         </div>
       )}
 
-      {activeFocus && selectedFocus?.status === "active" && (
+      {activeFocus && (selectedScope === "goal" || selectedFocus?.status === "active") && (
         <form className="task-composer" onSubmit={submit}>
           <label className="sr-only" htmlFor="project-task-title">
             New task
@@ -194,6 +214,11 @@ export function ProjectTasks({
             <Plus size={16} />
             {adding ? "Adding…" : "Add"}
           </button>
+          {selectedScope === "goal" && (
+            <small className="task-composer__scope-note">
+              New tasks join the active focus: {activeFocus.title}
+            </small>
+          )}
         </form>
       )}
 
@@ -218,15 +243,23 @@ export function ProjectTasks({
           </span>
           <strong>Your flight plan is empty</strong>
           <p>
-            {selectedFocus?.status === "active"
-              ? "Add the first thing you want to remember for this project."
-              : "No tasks were saved in this previous focus."}
+            {selectedScope === "goal"
+              ? "Add the first task that contributes to this goal."
+              : selectedFocus?.status === "active"
+                ? "Add the first thing you want to remember for this project."
+                : "No tasks were saved in this previous focus."}
           </p>
         </div>
       ) : (
         <div className="task-list">
           {selectedTasks.map((task) => {
             const busy = busyTaskId === task.id;
+            const taskFocus = focuses.find((focus) => focus.id === task.focusId);
+            const taskFeature = features.find((feature) => feature.id === task.featureId);
+            const taskContext = [
+              selectedScope === "goal" ? taskFocus?.title : null,
+              taskFeature?.name,
+            ].filter((value): value is string => Boolean(value));
             return (
               <article
                 key={task.id}
@@ -246,12 +279,7 @@ export function ProjectTasks({
                 </button>
                 <span className="task-item__content">
                   <span>{task.title}</span>
-                  {task.featureId && (
-                    <small>
-                      {features.find((feature) => feature.id === task.featureId)?.name ??
-                        "Linked feature"}
-                    </small>
-                  )}
+                  {taskContext.length > 0 && <small>{taskContext.join(" · ")}</small>}
                 </span>
                 <button
                   aria-label={`Remove ${task.title}`}

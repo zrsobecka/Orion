@@ -14,19 +14,24 @@ Vite uses the `runner` config loader because the restricted Codex workspace can 
 ## Quality gate
 
 ```powershell
-npm.cmd run lint
-npm.cmd run format:check
-npm.cmd test
-npm.cmd run build
-cargo test --manifest-path src-tauri\Cargo.toml
-cargo check --manifest-path src-tauri\Cargo.toml
+npm.cmd run check:all
 ```
+
+This runs lint, formatting verification, frontend tests, the production frontend build, Rust tests,
+and `cargo check`. Use the individual commands only when diagnosing a failed step.
 
 The normal release build runs this gate. `-SkipFrontendTests` is only a packaging diagnostic after an exact Vitest worker-startup timeout has been recorded; it never makes the test gate green.
 
 ## Windows release and retention standard
 
-Run `scripts\Build-App.ps1`. Every release uses a unique `%LOCALAPPDATA%\Orion\builds\release-*` Cargo target, then copies only current final binaries to `app\` using stable names:
+Run `npm.cmd run update:local` to check, build, copy, and refresh the desktop shortcut in one step.
+When the exact same source has already passed `npm.cmd run check:all`, use:
+
+```powershell
+pwsh.exe -NoProfile -File .\scripts\Orion-Update.ps1 -SkipCheck
+```
+
+The update uses `scripts\Build-App.ps1`. Every release uses a unique `%LOCALAPPDATA%\Orion\builds\release-*` Cargo target, then copies only current final binaries to `app\` using stable names:
 
 - `Orion.exe` — portable executable and desktop-shortcut target;
 - `Orion-setup.exe` — NSIS installer when produced;
