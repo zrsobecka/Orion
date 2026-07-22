@@ -14,6 +14,7 @@ import type {
   ProjectSnapshot,
   ReviewCommitAnalysisInput,
   StartProjectFocusInput,
+  UpdateProjectFocusInput,
   UpdateProjectInput,
 } from "../features/projects/types";
 import { demoDashboard } from "./demo-dashboard";
@@ -265,6 +266,28 @@ export const desktopRuntime = {
       startedAt: now,
       endedAt: null,
     });
+    return structuredClone(snapshot);
+  },
+
+  async updateProjectFocus(input: UpdateProjectFocusInput): Promise<ProjectSnapshot> {
+    if (isTauri()) return invoke<ProjectSnapshot>("update_project_focus", { input });
+    const snapshot = browserDashboard.projects.find(({ focuses }) =>
+      focuses.some(({ id }) => id === input.focusId),
+    );
+    if (!snapshot) throw new Error("The project focus is no longer available.");
+    const focus = snapshot.focuses.find(({ id }) => id === input.focusId);
+    if (focus) focus.title = input.title.trim();
+    return structuredClone(snapshot);
+  },
+
+  async removeProjectFocus(focusId: string): Promise<ProjectSnapshot> {
+    if (isTauri()) return invoke<ProjectSnapshot>("remove_project_focus", { focusId });
+    const snapshot = browserDashboard.projects.find(({ focuses }) =>
+      focuses.some(({ id }) => id === focusId),
+    );
+    if (!snapshot) throw new Error("The project focus is no longer available.");
+    snapshot.tasks = snapshot.tasks.filter((task) => task.focusId !== focusId);
+    snapshot.focuses = snapshot.focuses.filter(({ id }) => id !== focusId);
     return structuredClone(snapshot);
   },
 

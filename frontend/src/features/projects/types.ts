@@ -167,6 +167,11 @@ export interface StartProjectFocusInput {
   title: string;
 }
 
+export interface UpdateProjectFocusInput {
+  focusId: string;
+  title: string;
+}
+
 export interface FeatureSuggestion {
   name: string;
   description: string;

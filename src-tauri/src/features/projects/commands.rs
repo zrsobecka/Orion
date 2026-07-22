@@ -6,7 +6,7 @@ use crate::{
     domain::{
         AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, CommitAnalysis,
         Project, ProjectFeature, ProjectFocus, ProjectTask, ReviewCommitAnalysisInput,
-        StartProjectFocusInput, UpdateProjectInput,
+        StartProjectFocusInput, UpdateProjectFocusInput, UpdateProjectInput,
     },
     infrastructure::{
         integrations::git::{self, GitSnapshot},
@@ -311,6 +311,36 @@ pub fn start_project_focus(
             .lock()
             .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
         database::start_project_focus(&mut connection, &input)?
+    };
+    load_snapshot(&state, &project_id)
+}
+
+#[tauri::command]
+pub fn update_project_focus(
+    input: UpdateProjectFocusInput,
+    state: State<'_, AppState>,
+) -> Result<ProjectSnapshot, String> {
+    let project_id = {
+        let connection = state
+            .connection
+            .lock()
+            .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
+        database::update_project_focus(&connection, &input)?
+    };
+    load_snapshot(&state, &project_id)
+}
+
+#[tauri::command]
+pub fn remove_project_focus(
+    focus_id: String,
+    state: State<'_, AppState>,
+) -> Result<ProjectSnapshot, String> {
+    let project_id = {
+        let mut connection = state
+            .connection
+            .lock()
+            .map_err(|_| "The Orion database is temporarily unavailable.".to_string())?;
+        database::remove_project_focus(&mut connection, &focus_id)?
     };
     load_snapshot(&state, &project_id)
 }

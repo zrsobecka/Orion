@@ -1,5 +1,6 @@
-import { Archive, Check, Circle, Crosshair, Plus, Trash2, Zap } from "lucide-react";
+import { Check, Circle, Crosshair, Pencil, Plus, Trash2, Zap } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
+import { Modal } from "../../../shared/ui/Modal";
 import { getGoalTasks, getTaskProgress } from "../projectModel";
 import type {
   AddProjectTaskInput,
@@ -7,6 +8,7 @@ import type {
   ProjectFocus,
   ProjectTask,
   StartProjectFocusInput,
+  UpdateProjectFocusInput,
 } from "../types";
 
 interface ProjectTasksProps {
@@ -23,6 +25,9 @@ interface ProjectTasksProps {
   onSetCompleted: (taskId: string, completed: boolean) => Promise<void>;
   onRemove: (taskId: string) => Promise<void>;
   onStartFocus: (input: StartProjectFocusInput) => Promise<void>;
+  onUpdateGoal: (goal: string) => Promise<void>;
+  onUpdateFocus: (input: UpdateProjectFocusInput) => Promise<void>;
+  onRemoveFocus: (focusId: string) => Promise<void>;
 }
 
 export function ProjectTasks({
@@ -39,6 +44,9 @@ export function ProjectTasks({
   onSetCompleted,
   onRemove,
   onStartFocus,
+  onUpdateGoal,
+  onUpdateFocus,
+  onRemoveFocus,
 }: ProjectTasksProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
@@ -46,6 +54,10 @@ export function ProjectTasks({
   const [error, setError] = useState<string | null>(null);
   const [showFocusForm, setShowFocusForm] = useState(false);
   const [startingFocus, setStartingFocus] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(false);
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [showRemovePlan, setShowRemovePlan] = useState(false);
+  const [removingPlan, setRemovingPlan] = useState(false);
   const activeFocus = focuses.find((focus) => focus.status === "active") ?? null;
   const selectedFocus =
     focuses.find((focus) => focus.id === selectedFocusId) ?? activeFocus ?? null;
@@ -60,6 +72,44 @@ export function ProjectTasks({
     selectedScope === "goal"
       ? projectGoal || "Main project goal"
       : selectedFocus?.title || "Choose a project focus";
+
+  const savePlan = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const title = String(new FormData(event.currentTarget).get("planTitle") || "").trim();
+    if (!title) return;
+    setSavingPlan(true);
+    setError(null);
+    try {
+      if (selectedScope === "goal") {
+        await onUpdateGoal(title);
+      } else if (selectedFocus) {
+        await onUpdateFocus({ focusId: selectedFocus.id, title });
+      }
+      setEditingPlan(false);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSavingPlan(false);
+    }
+  };
+
+  const removePlan = async () => {
+    setRemovingPlan(true);
+    setError(null);
+    try {
+      if (selectedScope === "goal") {
+        await onUpdateGoal("");
+      } else if (selectedFocus) {
+        await onRemoveFocus(selectedFocus.id);
+      }
+      setShowRemovePlan(false);
+      setEditingPlan(false);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setRemovingPlan(false);
+    }
+  };
 
   const startFocus = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -157,33 +207,93 @@ export function ProjectTasks({
         </form>
       )}
 
-      {focuses.length > 0 && (
-        <div className="task-console__history">
-          <span>
-            <Archive size={13} /> View plan
-          </span>
-          <label className="task-console__focus-switcher">
-            <span className="sr-only">View task scope</span>
-            <select
-              aria-label="View task scope"
-              onChange={(event) => {
-                if (event.target.value === "goal") {
-                  onSelectGoal();
-                  return;
-                }
-                onSelectFocus(event.target.value);
-              }}
-              value={selectedScope === "goal" ? "goal" : (selectedFocus?.id ?? "goal")}
-            >
-              <option value="goal">Main goal · all focus tasks</option>
-              {focuses.map((focus) => (
-                <option key={focus.id} value={focus.id}>
-                  {focus.title} · {focus.status === "active" ? "active" : "previous"}
-                </option>
-              ))}
-            </select>
-          </label>
+      <div className="task-console__history">
+        <label className="task-console__focus-switcher">
+          <span>Switch between goal and focuses</span>
+          <select
+            aria-label="View task scope"
+            onChange={(event) => {
+              setEditingPlan(false);
+              if (event.target.value === "goal") {
+                onSelectGoal();
+                return;
+              }
+              onSelectFocus(event.target.value);
+            }}
+            value={selectedScope === "goal" ? "goal" : (selectedFocus?.id ?? "goal")}
+          >
+            <option value="goal">Goal · {projectGoal || "not set"}</option>
+            {focuses.map((focus) => (
+              <option key={focus.id} value={focus.id}>
+                Focus · {focus.title} {focus.status === "active" ? "(current)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="task-console__plan-actions">
+          <button
+            aria-label={`Edit ${selectedScope === "goal" ? "goal" : "focus"}`}
+            className="button button--ghost button--small"
+            onClick={() => setEditingPlan((visible) => !visible)}
+            type="button"
+          >
+            <Pencil size={13} /> Edit
+          </button>
+          <button
+            aria-label={`Remove ${selectedScope === "goal" ? "goal" : "focus"}`}
+            className="button button--danger-ghost button--small"
+            disabled={
+              (selectedScope === "goal" && !projectGoal) ||
+              (selectedScope === "focus" && !selectedFocus)
+            }
+            onClick={() => setShowRemovePlan(true)}
+            type="button"
+          >
+            <Trash2 size={13} /> Remove
+          </button>
         </div>
+      </div>
+
+      {editingPlan && (
+        <form className="plan-editor" onSubmit={savePlan}>
+          <label htmlFor="plan-title">
+            {selectedScope === "goal" ? "Project goal" : "Focus name"}
+          </label>
+          <div>
+            {selectedScope === "goal" ? (
+              <textarea
+                autoFocus
+                defaultValue={projectGoal}
+                id="plan-title"
+                maxLength={600}
+                name="planTitle"
+                required
+                rows={2}
+              />
+            ) : (
+              <input
+                autoFocus
+                defaultValue={selectedFocus?.title}
+                id="plan-title"
+                maxLength={200}
+                name="planTitle"
+                required
+              />
+            )}
+            <div className="plan-editor__actions">
+              <button
+                className="button button--ghost button--small"
+                onClick={() => setEditingPlan(false)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button className="button button--primary button--small" disabled={savingPlan}>
+                {savingPlan ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </form>
       )}
 
       {activeFocus && (selectedScope === "goal" || selectedFocus?.status === "active") && (
@@ -294,6 +404,38 @@ export function ProjectTasks({
             );
           })}
         </div>
+      )}
+
+      {showRemovePlan && (
+        <Modal
+          size="small"
+          title={selectedScope === "goal" ? "Remove project goal?" : "Remove this focus?"}
+          onClose={() => setShowRemovePlan(false)}
+        >
+          <p>
+            {selectedScope === "goal"
+              ? "The project stays in Orion. Only the saved goal text will be cleared."
+              : `“${selectedFocus?.title}” and its ${selectedTasks.length} ${selectedTasks.length === 1 ? "task" : "tasks"} will be permanently removed.`}
+          </p>
+          <div className="modal__actions">
+            <button
+              className="button button--ghost"
+              disabled={removingPlan}
+              onClick={() => setShowRemovePlan(false)}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className="button button--danger"
+              disabled={removingPlan}
+              onClick={() => void removePlan()}
+              type="button"
+            >
+              {removingPlan ? "Removing…" : "Remove"}
+            </button>
+          </div>
+        </Modal>
       )}
     </section>
   );

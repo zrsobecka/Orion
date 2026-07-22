@@ -2371,27 +2371,27 @@ h3 {
   position: relative;
   z-index: 2;
   display: flex;
-  gap: 6px;
+  gap: 10px;
   align-items: center;
   padding: 8px 13px;
   background: rgba(7, 16, 30, 0.72);
   border-bottom: 1px solid rgba(31, 69, 101, 0.38);
 }
 
-.task-console__history > span {
-  display: inline-flex;
-  flex: 0 0 auto;
-  gap: 6px;
-  align-items: center;
+.task-console__focus-switcher {
+  display: grid;
+  flex: 1 1 320px;
+  gap: 4px;
+  min-width: 0;
 }
 
-.task-console__focus-switcher {
-  min-width: 0;
-  margin-left: auto;
+.task-console__focus-switcher > span {
+  color: #7792a8;
+  font-size: 0.55rem;
 }
 
 .task-console__focus-switcher select {
-  width: min(270px, 100%);
+  width: 100%;
   min-width: 0;
   height: 30px;
   padding: 0 28px 0 9px;
@@ -2403,6 +2403,58 @@ h3 {
   background: rgba(3, 10, 22, 0.72);
   border: 1px solid rgba(49, 85, 116, 0.78);
   border-radius: 8px;
+}
+
+.task-console__plan-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 5px;
+  align-self: end;
+}
+
+.plan-editor {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 7px;
+  padding: 12px 13px;
+  background: rgba(12, 26, 45, 0.84);
+  border-bottom: 1px solid rgba(31, 69, 101, 0.5);
+}
+
+.plan-editor > label {
+  color: #bdd2e3;
+  font-size: 0.64rem;
+  font-weight: 650;
+}
+
+.plan-editor > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.plan-editor input,
+.plan-editor textarea {
+  min-width: 0;
+  padding: 8px 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.68rem;
+  resize: vertical;
+  background: rgba(3, 10, 22, 0.86);
+  border: 1px solid #315574;
+  border-radius: var(--radius-md);
+}
+
+.plan-editor input {
+  height: 36px;
+}
+
+.plan-editor__actions {
+  display: flex;
+  gap: 6px;
 }
 
 .task-composer {

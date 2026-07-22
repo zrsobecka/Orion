@@ -15,6 +15,8 @@ export function Modal({ title, eyebrow, children, onClose, size = "medium" }: Mo
   const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = dialogRef.current;
     const focusableSelector =
       'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -43,7 +45,10 @@ export function Modal({ title, eyebrow, children, onClose, size = "medium" }: Mo
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus();
+    };
   }, [onClose]);
 
   return (
