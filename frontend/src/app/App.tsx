@@ -100,6 +100,8 @@ export default function App() {
                 onReviewCommitAnalysis={workspace.reviewCommitAnalysis}
                 onSetProjectTaskCompleted={workspace.setProjectTaskCompleted}
                 onStartProjectFocus={workspace.startProjectFocus}
+                onUpdateProjectFocus={workspace.updateProjectFocus}
+                onRemoveProjectFocus={workspace.removeProjectFocus}
                 onUpdateFeatureStatus={workspace.updateFeatureStatus}
                 onUpdateProject={workspace.updateProject}
               />

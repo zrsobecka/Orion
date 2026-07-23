@@ -33,6 +33,7 @@ import type {
   ProjectStatus,
   ReviewCommitAnalysisInput,
   StartProjectFocusInput,
+  UpdateProjectFocusInput,
   UpdateProjectInput,
 } from "../types";
 import { FeatureSuggestionsModal } from "./FeatureSuggestionsModal";
@@ -57,6 +58,8 @@ interface ProjectCockpitProps {
   onAddProjectTask: (input: AddProjectTaskInput) => Promise<void>;
   onSetProjectTaskCompleted: (taskId: string, completed: boolean) => Promise<void>;
   onStartProjectFocus: (input: StartProjectFocusInput) => Promise<void>;
+  onUpdateProjectFocus: (input: UpdateProjectFocusInput) => Promise<void>;
+  onRemoveProjectFocus: (focusId: string) => Promise<void>;
   onRemoveProjectTask: (taskId: string) => Promise<void>;
   onUpdateFeatureStatus: (featureId: string, status: FeatureStatus) => void;
   onRemoveProject: (projectId: string) => Promise<void>;
@@ -78,6 +81,8 @@ export function ProjectCockpit({
   onAddProjectTask,
   onSetProjectTaskCompleted,
   onStartProjectFocus,
+  onUpdateProjectFocus,
+  onRemoveProjectFocus,
   onRemoveProjectTask,
   onUpdateFeatureStatus,
   onRemoveProject,
@@ -203,6 +208,21 @@ export function ProjectCockpit({
               setSelectedRing("focus");
             }}
             onStartFocus={onStartProjectFocus}
+            onUpdateGoal={(goal) =>
+              onUpdateProject({
+                id: snapshot.project.id,
+                goal,
+                nextAction: snapshot.project.nextAction,
+                status: snapshot.project.status,
+              })
+            }
+            onUpdateFocus={onUpdateProjectFocus}
+            onRemoveFocus={async (focusId) => {
+              const removingActiveFocus = focusId === activeFocus?.id;
+              await onRemoveProjectFocus(focusId);
+              setSelectedFocusId(removingActiveFocus ? null : (activeFocus?.id ?? null));
+              setSelectedRing(removingActiveFocus || !activeFocus ? "goal" : "focus");
+            }}
           />
         </div>
 

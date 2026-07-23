@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager};
 use crate::domain::{
     AcceptFeatureSuggestionsInput, AddFeatureInput, AddProjectTaskInput, CommitAnalysis, Project,
     ProjectFeature, ProjectFocus, ProjectTask, ReviewCommitAnalysisInput, StartProjectFocusInput,
-    UpdateProjectInput,
+    UpdateProjectFocusInput, UpdateProjectInput,
 };
 
 pub struct AppState {
@@ -658,6 +658,57 @@ pub fn start_project_focus(
     Ok(input.project_id.clone())
 }
 
+pub fn update_project_focus(
+    connection: &Connection,
+    input: &UpdateProjectFocusInput,
+) -> Result<String, String> {
+    let title = input.title.trim();
+    if title.is_empty() || input.title.chars().count() > 200 {
+        return Err("Focus title must contain between 1 and 200 characters.".to_string());
+    }
+    let project_id = connection
+        .query_row(
+            "SELECT project_id FROM project_focuses WHERE id = ?1",
+            [&input.focus_id],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|error| format!("Could not find the project focus: {error}"))?
+        .ok_or_else(|| "The project focus is no longer available.".to_string())?;
+    connection
+        .execute(
+            "UPDATE project_focuses SET title = ?2 WHERE id = ?1",
+            params![input.focus_id, title],
+        )
+        .map_err(|error| format!("Could not update the project focus: {error}"))?;
+    Ok(project_id)
+}
+
+pub fn remove_project_focus(connection: &mut Connection, focus_id: &str) -> Result<String, String> {
+    let project_id = connection
+        .query_row(
+            "SELECT project_id FROM project_focuses WHERE id = ?1",
+            [focus_id],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|error| format!("Could not find the project focus: {error}"))?
+        .ok_or_else(|| "The project focus is no longer available.".to_string())?;
+    let transaction = connection
+        .transaction()
+        .map_err(|error| format!("Could not start removing the project focus: {error}"))?;
+    transaction
+        .execute("DELETE FROM project_tasks WHERE focus_id = ?1", [focus_id])
+        .map_err(|error| format!("Could not remove the focus tasks: {error}"))?;
+    transaction
+        .execute("DELETE FROM project_focuses WHERE id = ?1", [focus_id])
+        .map_err(|error| format!("Could not remove the project focus: {error}"))?;
+    transaction
+        .commit()
+        .map_err(|error| format!("Could not finish removing the project focus: {error}"))?;
+    Ok(project_id)
+}
+
 pub fn add_project_task(
     connection: &Connection,
     input: &AddProjectTaskInput,
@@ -1182,6 +1233,65 @@ mod tests {
 
         let tasks = list_project_tasks(&connection, &project.id).expect("tasks");
         assert_eq!(tasks[0].focus_id.as_deref(), Some(first_focus.as_str()));
+    }
+
+    #[test]
+    fn updating_a_focus_changes_only_its_title() {
+        let mut connection = test_connection();
+        let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        let focus_id = start_focus(&mut connection, &project.id, "Old focus title");
+
+        let updated_project_id = update_project_focus(
+            &connection,
+            &UpdateProjectFocusInput {
+                focus_id: focus_id.clone(),
+                title: "Clear focus title".to_string(),
+            },
+        )
+        .expect("update focus");
+
+        let focus = list_project_focuses(&connection, &project.id)
+            .expect("focuses")
+            .remove(0);
+        assert_eq!(updated_project_id, project.id);
+        assert_eq!(focus.id, focus_id);
+        assert_eq!(focus.title, "Clear focus title");
+        assert_eq!(focus.status, "active");
+    }
+
+    #[test]
+    fn removing_a_focus_removes_its_tasks_but_keeps_other_focuses() {
+        let mut connection = test_connection();
+        let project = add_project(&connection, "Orion", "C:\\Apps\\Orion").expect("project");
+        let first_focus = start_focus(&mut connection, &project.id, "First focus");
+        add_project_task(
+            &connection,
+            &AddProjectTaskInput {
+                project_id: project.id.clone(),
+                feature_id: None,
+                title: "Task to remove".to_string(),
+            },
+        )
+        .expect("first task");
+        let second_focus = start_focus(&mut connection, &project.id, "Second focus");
+        add_project_task(
+            &connection,
+            &AddProjectTaskInput {
+                project_id: project.id.clone(),
+                feature_id: None,
+                title: "Task to keep".to_string(),
+            },
+        )
+        .expect("second task");
+
+        remove_project_focus(&mut connection, &first_focus).expect("remove focus");
+
+        let focuses = list_project_focuses(&connection, &project.id).expect("focuses");
+        let tasks = list_project_tasks(&connection, &project.id).expect("tasks");
+        assert_eq!(focuses.len(), 1);
+        assert_eq!(focuses[0].id, second_focus);
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].title, "Task to keep");
     }
 
     #[test]

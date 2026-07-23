@@ -28,6 +28,8 @@ pub fn run() {
             features::projects::accept_feature_suggestions,
             features::projects::update_feature_status,
             features::projects::start_project_focus,
+            features::projects::update_project_focus,
+            features::projects::remove_project_focus,
             features::projects::add_project_task,
             features::projects::set_project_task_completed,
             features::projects::remove_project_task,

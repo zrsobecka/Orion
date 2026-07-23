@@ -1,5 +1,6 @@
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Modal } from "./Modal";
 
@@ -31,6 +32,32 @@ describe("Modal", () => {
     saveButton.focus();
     await user.tab();
     expect(screen.getByRole("button", { name: "Close dialog" })).toHaveFocus();
+  });
+
+  it("returns focus to the control that opened it", async () => {
+    const user = userEvent.setup();
+    function Example() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            Remove focus
+          </button>
+          {open && (
+            <Modal title="Remove this focus?" onClose={() => setOpen(false)}>
+              <button type="button">Remove</button>
+            </Modal>
+          )}
+        </>
+      );
+    }
+    render(<Example />);
+
+    const trigger = screen.getByRole("button", { name: "Remove focus" });
+    await user.click(trigger);
+    await user.keyboard("{Escape}");
+
+    expect(trigger).toHaveFocus();
   });
 
   it("applies the large size variant", () => {

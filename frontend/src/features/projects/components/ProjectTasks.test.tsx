@@ -69,6 +69,9 @@ describe("ProjectTasks", () => {
         onSetCompleted={vi.fn()}
         onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
+        onUpdateGoal={vi.fn()}
+        onUpdateFocus={vi.fn()}
+        onRemoveFocus={vi.fn()}
       />,
     );
 
@@ -102,6 +105,9 @@ describe("ProjectTasks", () => {
         onSetCompleted={onSetCompleted}
         onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
+        onUpdateGoal={vi.fn()}
+        onUpdateFocus={vi.fn()}
+        onRemoveFocus={vi.fn()}
       />,
     );
 
@@ -130,6 +136,9 @@ describe("ProjectTasks", () => {
         onSetCompleted={vi.fn()}
         onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
+        onUpdateGoal={vi.fn()}
+        onUpdateFocus={vi.fn()}
+        onRemoveFocus={vi.fn()}
       />,
     );
 
@@ -163,6 +172,9 @@ describe("ProjectTasks", () => {
         onSetCompleted={vi.fn()}
         onSelectFocus={vi.fn()}
         onStartFocus={onStartFocus}
+        onUpdateGoal={vi.fn()}
+        onUpdateFocus={vi.fn()}
+        onRemoveFocus={vi.fn()}
       />,
     );
 
@@ -201,6 +213,9 @@ describe("ProjectTasks", () => {
         onSetCompleted={vi.fn()}
         onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
+        onUpdateGoal={vi.fn()}
+        onUpdateFocus={vi.fn()}
+        onRemoveFocus={vi.fn()}
       />,
     );
 
@@ -234,6 +249,9 @@ describe("ProjectTasks", () => {
         onSetCompleted={vi.fn()}
         onSelectFocus={onSelectFocus}
         onStartFocus={vi.fn()}
+        onUpdateGoal={vi.fn()}
+        onUpdateFocus={vi.fn()}
+        onRemoveFocus={vi.fn()}
       />,
     );
 
@@ -261,10 +279,114 @@ describe("ProjectTasks", () => {
         onSetCompleted={vi.fn()}
         onSelectFocus={vi.fn()}
         onStartFocus={vi.fn()}
+        onUpdateGoal={vi.fn()}
+        onUpdateFocus={vi.fn()}
+        onRemoveFocus={vi.fn()}
       />,
     );
 
     await user.selectOptions(screen.getByLabelText("View task scope"), "goal");
     expect(onSelectGoal).toHaveBeenCalledOnce();
+  });
+
+  it("edits the selected goal without leaving the flight plan", async () => {
+    const user = userEvent.setup();
+    const onUpdateGoal = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ProjectTasks
+        projectId="project-1"
+        projectGoal="Ship a reliable mission control"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-1"
+        selectedScope="goal"
+        tasks={tasks}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onSelectGoal={vi.fn()}
+        onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
+        onStartFocus={vi.fn()}
+        onUpdateGoal={onUpdateGoal}
+        onUpdateFocus={vi.fn()}
+        onRemoveFocus={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Edit goal" }));
+    const goalInput = screen.getByLabelText("Project goal");
+    await user.clear(goalInput);
+    await user.type(goalInput, "Make every project easy to resume");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onUpdateGoal).toHaveBeenCalledWith("Make every project easy to resume");
+  });
+
+  it("renames the selected focus", async () => {
+    const user = userEvent.setup();
+    const onUpdateFocus = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ProjectTasks
+        projectId="project-1"
+        projectGoal="Ship a reliable mission control"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-old"
+        selectedScope="focus"
+        tasks={tasks}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onSelectGoal={vi.fn()}
+        onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
+        onStartFocus={vi.fn()}
+        onUpdateGoal={vi.fn()}
+        onUpdateFocus={onUpdateFocus}
+        onRemoveFocus={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Edit focus" }));
+    const focusInput = screen.getByLabelText("Focus name");
+    await user.clear(focusInput);
+    await user.type(focusInput, "Build a stronger foundation");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onUpdateFocus).toHaveBeenCalledWith({
+      focusId: "focus-old",
+      title: "Build a stronger foundation",
+    });
+  });
+
+  it("confirms removing a focus together with its tasks", async () => {
+    const user = userEvent.setup();
+    const onRemoveFocus = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ProjectTasks
+        projectId="project-1"
+        projectGoal="Ship a reliable mission control"
+        features={[]}
+        focuses={focuses}
+        selectedFocusId="focus-1"
+        selectedScope="focus"
+        tasks={tasks}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onSelectGoal={vi.fn()}
+        onSetCompleted={vi.fn()}
+        onSelectFocus={vi.fn()}
+        onStartFocus={vi.fn()}
+        onUpdateGoal={vi.fn()}
+        onUpdateFocus={vi.fn()}
+        onRemoveFocus={onRemoveFocus}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Remove focus" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText(/and its 1 task will be permanently removed/)).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Remove" }));
+
+    expect(onRemoveFocus).toHaveBeenCalledWith("focus-1");
   });
 });

@@ -86,6 +86,13 @@ pub struct StartProjectFocusInput {
     pub title: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProjectFocusInput {
+    pub focus_id: String,
+    pub title: String,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FeatureSuggestion {

@@ -11,6 +11,7 @@ import type {
   ProjectSnapshot,
   ReviewCommitAnalysisInput,
   StartProjectFocusInput,
+  UpdateProjectFocusInput,
   UpdateProjectInput,
 } from "../types";
 
@@ -198,6 +199,32 @@ export function useProjects() {
     [replaceSnapshot],
   );
 
+  const updateProjectFocus = useCallback(
+    async (input: UpdateProjectFocusInput) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.updateProjectFocus(input));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
+  const removeProjectFocus = useCallback(
+    async (focusId: string) => {
+      setError(null);
+      try {
+        replaceSnapshot(await desktopRuntime.removeProjectFocus(focusId));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+        throw caught;
+      }
+    },
+    [replaceSnapshot],
+  );
+
   const setProjectTaskCompleted = useCallback(
     async (taskId: string, completed: boolean) => {
       setError(null);
@@ -266,6 +293,8 @@ export function useProjects() {
     updateFeatureStatus,
     addProjectTask,
     startProjectFocus,
+    updateProjectFocus,
+    removeProjectFocus,
     setProjectTaskCompleted,
     removeProjectTask,
     removeProject,
